@@ -109,7 +109,11 @@ class WebsiteregisterRijksoverheidService(val objectMapper: ObjectMapper) {
     private fun determineDomain() {
         try {
             val url = URL(resourceURL)
-            domain = url.protocol.plus("://").plus(url.host)
+            if(url.port != -1) {
+                domain = url.protocol.plus("://").plus(url.host).plus(":").plus(url.port)
+            } else {
+                domain = url.protocol.plus("://").plus(url.host)
+            }
         } catch (t: Throwable) {
             logger.error("Unable to parse resourceURL '${resourceURL}', could not determine domain. Exiting application")
             exitProcess(1)
