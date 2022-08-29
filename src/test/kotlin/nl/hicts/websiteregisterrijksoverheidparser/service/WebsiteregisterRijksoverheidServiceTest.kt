@@ -226,14 +226,14 @@ class WebsiteregisterRijksoverheidServiceTest {
         stubFor(
             get(binaryLinkWithOneSite())
                 .withHost(equalTo(wiremockHost))
-                .willReturn(aResponse().withBodyFile("/$REGISTER_1_SITE"))
+                .willReturn(aResponse().withBodyFile("$REGISTER_1_SITE"))
         )
 
         // Serve the second file when requested
         stubFor(
             get(binaryLinkWithTwoSites())
                 .withHost(equalTo(wiremockHost))
-                .willReturn(aResponse().withBodyFile("/$REGISTER_2_SITES"))
+                .willReturn(aResponse().withBodyFile("$REGISTER_2_SITES"))
         )
     }
 
