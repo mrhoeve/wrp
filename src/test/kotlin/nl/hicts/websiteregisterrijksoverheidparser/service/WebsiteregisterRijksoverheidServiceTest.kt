@@ -126,6 +126,37 @@ class WebsiteregisterRijksoverheidServiceTest {
         verify(1, getRequestedFor(urlEqualTo(binaryLinkWithTwoSites())))
     }
 
+    @Test
+    fun `Second check for new register receives the same file`() {
+        setResourceURL()
+        setCallbackURL()
+
+        // Let's start
+        // First, determine if startup works
+        service.initializeServiceAtStartup()
+
+        // Check for a new register
+        // Wiremock is configured to give a different resourceURL page so this should result in something
+        service.checkForNewRegister()
+
+        val firstCallResultMetadata = objectMapper.readValue(service.getMetadata(), RegisterMetadata::class.java)
+        val firstCallResultData = service.getRegisterData()
+
+        // Check again for a new register
+        // Wiremock is configured to give the same page as like nothing has changed
+        service.checkForNewRegister()
+
+        val secondCallResultMetadata =
+            objectMapper.readValue(service.getMetadata(), RegisterMetadata::class.java)
+        val secondCallResultData = service.getRegisterData()
+        assertEquals(firstCallResultMetadata, secondCallResultMetadata)
+        assertEquals(firstCallResultData, secondCallResultData)
+
+        // Verify wiremock interaction
+        // First, the resourceURL should be called for twice
+        verify(3, getRequestedFor(urlEqualTo(defaultResourceURL)))
+    }
+
     private fun validHTMLContaingTag(binaryLinkToFile: String): String {
         return """
             <html>
@@ -212,7 +243,6 @@ class WebsiteregisterRijksoverheidServiceTest {
             get(defaultResourceURL).inScenario("ResourceURL")
                 .whenScenarioStateIs("Serve second resource")
                 .willReturn(ok(validHTMLContaingTag(binaryLinkWithTwoSites())))
-                .willSetStateTo(STARTED)
         )
 
         // Give an 200 response on the callback
