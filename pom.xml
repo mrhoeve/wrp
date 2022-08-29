@@ -25,6 +25,11 @@
         <sonar.projectKey>mrhoeve_wrp</sonar.projectKey>
         <sonar.organization>mrhoeve</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+        <sonar.links.homepage>https://github.com/mrhoeve/wrp</sonar.links.homepage>
+        <sonar.links.scm>https://github.com/mrhoeve/wrp</sonar.links.scm>
+        <sonar.coverage.exclusions>
+            **/configuration/*, **/controller/*, **/model/*
+        </sonar.coverage.exclusions>
     </properties>
     <dependencies>
         <dependency>

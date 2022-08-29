@@ -1,4 +1,6 @@
-# wrp
+# WebsiteregisterRijksoverheidParser
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=mrhoeve_wrp&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=mrhoeve_wrp)
+
 This application loads the websiteregister from the Dutch government. The data is persistent in memory for 15 minutes after first retrieving it. After that, it's recreated upon request of the data.
 
 # Endpoints
