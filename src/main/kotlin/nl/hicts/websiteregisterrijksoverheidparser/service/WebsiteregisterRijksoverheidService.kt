@@ -53,6 +53,8 @@ class WebsiteregisterRijksoverheidService(val objectMapper: ObjectMapper) {
     private lateinit var resourceURL: String
     @Value("\${callbackurl:}")
     private var callbackURL: String? = null
+    @Value("\${callbackparameter:}")
+    private var callbackparameter: String? = null
 
     private lateinit var domain: String
     private var tempFile: File? = null
@@ -185,7 +187,12 @@ class WebsiteregisterRijksoverheidService(val objectMapper: ObjectMapper) {
     private fun performCallback() {
         if(callbackURL?.isBlank() == false) {
             try {
-                val callbackResponse = Jsoup.connect(callbackURL!!).get()
+                val completeCallbackURL = if(callbackparameter?.isBlank() == false) {
+                    "$callbackURL?$callbackparameter"
+                } else {
+                    "$callbackURL"
+                }
+                val callbackResponse = Jsoup.connect(completeCallbackURL).get()
                 logger.info("Callback to $callbackURL executed, response document:\n$callbackResponse")
             } catch (t: Throwable) {
                 logger.error("Unable to perform callback to $callbackURL", t)

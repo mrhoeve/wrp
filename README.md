@@ -104,6 +104,7 @@ services:
     environment:
       resourceurl: https://resource.url/containing/ods/file
       callbackurl: https://some.url.to/callback
+      callbackparameter: token=xyz
 ```
 # Environment variables
-`resourceurl` defaults to `https://www.communicatierijk.nl/vakkennis/rijkswebsites/verplichte-richtlijnen/websiteregister-rijksoverheid`. Use `callbackurl` to specify the page that must be notified when a new datafile is detected.
+`resourceurl` defaults to `https://www.communicatierijk.nl/vakkennis/rijkswebsites/verplichte-richtlijnen/websiteregister-rijksoverheid`. Use `callbackurl` to specify the page that must be notified when a new datafile is detected. When `callbackparameter` is specified, the callbackurl is appended with `?` and the given value.

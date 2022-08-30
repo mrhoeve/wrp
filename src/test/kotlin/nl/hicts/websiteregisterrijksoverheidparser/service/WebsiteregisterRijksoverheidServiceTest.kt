@@ -91,14 +91,14 @@ class WebsiteregisterRijksoverheidServiceTest {
 
         // Sleep until caches clear and get the metadata.
         // It should be completely the same as when initializing
-        CACHEMANAGER_TIMEOUT_TIMEUNIT.sleep(CACHEMANAGER_TIMEOUT + 1L)
+        TimeUnit.SECONDS.sleep(1)
         val resultMetadataAfterClearingCache =
             objectMapper.readValue(service.getMetadata(), RegisterMetadata::class.java)
         assertEquals(firstCallResultMetadata, resultMetadataAfterClearingCache)
 
         // Sleep until caches clear and get the data.
         // This should also be the same as when initializing
-        CACHEMANAGER_TIMEOUT_TIMEUNIT.sleep(CACHEMANAGER_TIMEOUT + 1L)
+        TimeUnit.SECONDS.sleep(1)
         val resultDataAfterClearingCache = service.getRegisterData()
         assertEquals(firstCallResultData, resultDataAfterClearingCache)
 
@@ -156,6 +156,21 @@ class WebsiteregisterRijksoverheidServiceTest {
         // First, the resourceURL should be called for twice
         verify(3, getRequestedFor(urlEqualTo(defaultResourceURL)))
     }
+
+    @Test
+    fun `Test callbackparameter`() {
+        setResourceURL()
+        setCallbackURL()
+        setCallbackparameter()
+
+        // Let's start
+        // First, determine if startup works
+        service.initializeServiceAtStartup()
+
+        // The callback should also be called twice (after initializing and after finding the new register)
+        verify(1, getRequestedFor(urlEqualTo("/callback?token=xyz")))
+    }
+
 
     private fun validHTMLContaingTag(binaryLinkToFile: String): String {
         return """
@@ -225,6 +240,14 @@ class WebsiteregisterRijksoverheidServiceTest {
             service,
             "callbackURL",
             "http://$defaultDomain/callback"
+        )
+    }
+
+    private fun setCallbackparameter() {
+        ReflectionTestUtils.setField(
+            service,
+            "callbackparameter",
+            "token=xyz"
         )
     }
 
