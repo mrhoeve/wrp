@@ -1,7 +1,6 @@
 package nl.hicts.websiteregisterrijksoverheidparser.configuration
 
 import com.github.benmanes.caffeine.cache.Caffeine
-import nl.hicts.websiteregisterrijksoverheidparser.service.WebsiteregisterRijksoverheidService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.cache.CacheManager
