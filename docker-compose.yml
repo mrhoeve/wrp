@@ -18,3 +18,7 @@ services:
 #    environment:
 #      resourceurl: https://resource.url/containing/ods/file
 #      callbackurl: https://some.url.to/callback
+#      callbackparameter: token=xyz
+#      cacheduration: cacheduration
+#      cachetimeunit: cachetimeunit
+
