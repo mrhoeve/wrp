@@ -34,7 +34,7 @@ import kotlin.system.exitProcess
 
 @Service
 @CacheConfig(cacheNames = ["data", "metadata"])
-class WebsiteregisterRijksoverheidService(val objectMapper: ObjectMapper) {
+open class WebsiteregisterRijksoverheidService(val objectMapper: ObjectMapper) {
     companion object {
         private const val baseDomain = "https://www.communicatierijk.nl"
         const val baseResourceURL =
@@ -75,7 +75,7 @@ class WebsiteregisterRijksoverheidService(val objectMapper: ObjectMapper) {
      * When the cache doesn't contain the metadata-key, all data is reloaded into the cache
      */
     @Cacheable(cacheNames = ["metadata"])
-    fun getMetadata(): String {
+    open fun getMetadata(): String {
         if ((cacheManager.getCache("metadata") as CaffeineCache).nativeCache.asMap()?.values?.firstOrNull() == null) {
             processFile()
         }
@@ -87,7 +87,7 @@ class WebsiteregisterRijksoverheidService(val objectMapper: ObjectMapper) {
      * When the cache doesn't contain the data-key, all data is reloaded into the cache
      */
     @Cacheable(cacheNames = ["data"])
-    fun getRegisterData(): String {
+    open fun getRegisterData(): String {
         if ((cacheManager.getCache("data") as CaffeineCache).nativeCache.asMap()?.values?.firstOrNull() == null) {
             processFile()
         }
@@ -217,7 +217,7 @@ class WebsiteregisterRijksoverheidService(val objectMapper: ObjectMapper) {
      * Clears all cached data and deletes the registerMetadata.
      */
     @CacheEvict(value = ["data", "metadata"], allEntries = true)
-    fun clearCachedDataAndInvalidateCache() {
+    open fun clearCachedDataAndInvalidateCache() {
         clearCachedData()
         registerMetadata = null
     }

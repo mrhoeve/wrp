@@ -275,6 +275,13 @@ class WebsiteregisterRijksoverheidServiceTest {
                 .willReturn(ok())
         )
 
+        // Give an 200 response on the callback with token
+        stubFor(
+            get("/callback?token=xyz")
+                .withHost(equalTo(wiremockHost))
+                .willReturn(ok())
+        )
+
         // Serve the first file when requested
         stubFor(
             get(binaryLinkWithOneSite())
