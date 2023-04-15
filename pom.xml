@@ -27,6 +27,7 @@
         <wiremock.version>3.0.0-beta-7</wiremock.version>
         <jsoup.version>1.15.4</jsoup.version>
         <snakeyaml.version>2.0</snakeyaml.version>
+        <json.version>20230227</json.version>
         <sonar.projectKey>mrhoeve_wrp</sonar.projectKey>
         <sonar.organization>mrhoeve</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
@@ -70,6 +71,17 @@
             <groupId>org.odftoolkit</groupId>
             <artifactId>odfdom-java</artifactId>
             <version>${odfdom.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.json</groupId>
+                    <artifactId>json</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>${json.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jsoup</groupId>
