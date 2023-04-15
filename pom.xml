@@ -24,7 +24,7 @@
         <kotlin.version>1.7.22</kotlin.version>
         <caffeine.version>3.1.6</caffeine.version>
         <odfdom.version>0.11.0</odfdom.version>
-        <wiremock.version>3.0.0-beta-2</wiremock.version>
+        <wiremock.version>3.0.0-beta-7</wiremock.version>
         <jsoup.version>1.15.4</jsoup.version>
         <sonar.projectKey>mrhoeve_wrp</sonar.projectKey>
         <sonar.organization>mrhoeve</sonar.organization>
