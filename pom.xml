@@ -9,7 +9,7 @@
     </parent>
     <groupId>nl.hicts</groupId>
     <artifactId>WebsiteregisterRijksoverheidParser</artifactId>
-    <version>1.1</version>
+    <version>1.2-SNAPSHOT</version>
     <name>WebsiteregisterRijksoverheidParser</name>
     <description>WebsiteregisterRijksoverheidParser</description>
     <developers>
@@ -167,6 +167,6 @@
         <connection>scm:git:${project.scm.url}</connection>
         <developerConnection>scm:git:${project.scm.url}</developerConnection>
         <url>git@github.com:mrhoeve/wrp.git</url>
-      <tag>1.1</tag>
+      <tag>HEAD</tag>
   </scm>
 </project>
