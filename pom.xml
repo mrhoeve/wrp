@@ -10,7 +10,7 @@
     </parent>
     <groupId>nl.hicts</groupId>
     <artifactId>WebsiteregisterRijksoverheidParser</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0-SNAPSHOT</version>
     <name>WebsiteregisterRijksoverheidParser</name>
     <description>WebsiteregisterRijksoverheidParser</description>
     <developers>
