@@ -36,6 +36,7 @@
         <sonar.coverage.exclusions>
             **/configuration/*, **/controller/*, **/model/*
         </sonar.coverage.exclusions>
+        <maven-release-plugin.version>2.5.3</maven-release-plugin.version>
     </properties>
     <dependencies>
         <dependency>
@@ -107,6 +108,14 @@
         <testSourceDirectory>${project.basedir}/src/test/kotlin</testSourceDirectory>
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>${maven-release-plugin.version}</version>
+                <configuration>
+                    <tagNameFormat>@{project.version}</tagNameFormat>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
@@ -155,4 +164,9 @@
             </plugin>
         </plugins>
     </build>
+    <scm>
+        <connection>scm:git:${project.scm.url}</connection>
+        <developerConnection>scm:git:${project.scm.url}</developerConnection>
+        <url>git@github.com:mrhoeve/wrp.git</url>
+    </scm>
 </project>
