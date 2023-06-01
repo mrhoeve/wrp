@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.0.5</version>
+        <version>3.1.0</version>
         <relativePath /> <!-- lookup parent from repository -->
     </parent>
     <groupId>nl.hicts</groupId>
@@ -23,8 +23,8 @@
         <kotlin.version>1.7.22</kotlin.version>
         <caffeine.version>3.1.6</caffeine.version>
         <odfdom.version>0.11.0</odfdom.version>
-        <wiremock.version>3.0.0-beta-7</wiremock.version>
-        <jsoup.version>1.15.4</jsoup.version>
+        <wiremock.version>3.0.0-beta-8</wiremock.version>
+        <jsoup.version>1.16.1</jsoup.version>
         <snakeyaml.version>2.0</snakeyaml.version>
         <json.version>20230227</json.version>
         <sonar.projectKey>mrhoeve_wrp</sonar.projectKey>
