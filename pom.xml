@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.1.0</version>
+        <version>3.1.5</version>
         <relativePath /> <!-- lookup parent from repository -->
     </parent>
     <groupId>nl.hicts</groupId>
@@ -19,14 +19,15 @@
         </developer>
     </developers>
     <properties>
+        <!-- versions related to Spring boot -->
         <java.version>17</java.version>
-        <kotlin.version>1.7.22</kotlin.version>
-        <caffeine.version>3.1.6</caffeine.version>
+        <kotlin.version>1.9.20</kotlin.version>
+        <caffeine.version>3.1.8</caffeine.version>
         <odfdom.version>0.11.0</odfdom.version>
-        <wiremock.version>3.0.0-beta-8</wiremock.version>
-        <jsoup.version>1.16.1</jsoup.version>
-        <snakeyaml.version>2.0</snakeyaml.version>
-        <json.version>20230227</json.version>
+        <wiremock.version>3.3.1</wiremock.version>
+        <jsoup.version>1.16.2</jsoup.version>
+        <snakeyaml.version>2.2</snakeyaml.version>
+        <json.version>20231013</json.version>
         <sonar.projectKey>mrhoeve_wrp</sonar.projectKey>
         <sonar.organization>mrhoeve</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
@@ -95,7 +96,7 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.github.tomakehurst</groupId>
+            <groupId>org.wiremock</groupId>
             <artifactId>wiremock</artifactId>
             <version>${wiremock.version}</version>
             <scope>test</scope>

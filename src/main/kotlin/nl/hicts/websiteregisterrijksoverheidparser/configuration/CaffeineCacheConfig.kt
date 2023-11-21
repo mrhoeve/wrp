@@ -36,7 +36,7 @@ open class CaffeineCacheConfig {
     }
 
     private fun determineCacheDuration(): Long {
-        return cacheDuration.toLongOrNull()?.let { it } ?: run { 15L }
+        return cacheDuration.toLongOrNull() ?: run { 15L }
     }
 
     private fun determineCacheTimeUnit(): TimeUnit {
