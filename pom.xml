@@ -31,13 +31,16 @@
         <commons-compress.version>1.25.0</commons-compress.version>
         <logback.version>1.4.12</logback.version>
         <jackson-bom.version>2.16.0</jackson-bom.version>
+        <mockk.version>1.13.8</mockk.version>
         <sonar.projectKey>mrhoeve_wrp</sonar.projectKey>
         <sonar.organization>mrhoeve</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.links.homepage>https://github.com/mrhoeve/wrp</sonar.links.homepage>
         <sonar.links.scm>https://github.com/mrhoeve/wrp</sonar.links.scm>
         <sonar.coverage.exclusions>
-            **/configuration/*, **/controller/*, **/model/*
+            **/WebsiteregisterRijksoverheidParserApplication.kt
+            **/CaffeineCacheConfig.kt,
+            **/RegisterMetadata.kt
         </sonar.coverage.exclusions>
         <maven-release-plugin.version>2.5.3</maven-release-plugin.version>
     </properties>
@@ -113,7 +116,12 @@
             <version>${wiremock.version}</version>
             <scope>test</scope>
         </dependency>
-
+        <dependency>
+            <groupId>io.mockk</groupId>
+            <artifactId>mockk-jvm</artifactId>
+            <version>${mockk.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
