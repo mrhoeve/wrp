@@ -70,6 +70,12 @@ open class WebsiteregisterRijksoverheidService(val objectMapper: ObjectMapper) {
     private var data = mutableListOf<MutableMap<String, String>>()
 
     /**
+     * This variable is only set in de unittest `domain could not be determined`
+     * When set to true, it prevents calling exitProcess
+     */
+    private var serviceUnderTest: Boolean = false
+
+    /**
      * Serves [registerMetadata] as json from the cache
      * When the cache doesn't contain the metadata-key, all data is reloaded into the cache
      */
@@ -117,7 +123,10 @@ open class WebsiteregisterRijksoverheidService(val objectMapper: ObjectMapper) {
             }
         } catch (t: Throwable) {
             logger.error("Unable to parse resourceURL '${resourceURL}', could not determine domain. Exiting application")
-            exitProcess(1)
+            // If the service is not under test, then this is irrecovarable
+            if (!serviceUnderTest) exitProcess(1)
+            // Otherwise, throw a RuntimeException
+            throw RuntimeException()
         }
     }
 

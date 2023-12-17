@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.skyscreamer.jsonassert.JSONAssert
 import org.springframework.cache.CacheManager
 import org.springframework.cache.caffeine.CaffeineCacheManager
@@ -69,6 +70,27 @@ class WebsiteregisterRijksoverheidServiceTest {
         ReflectionTestUtils.setField(service, "cacheManager", cacheManager)
 
         createWiremockStubbing()
+    }
+
+    @Test
+    fun `domain could not be determined`() {
+        // Prevent shutdown of JVM
+        ReflectionTestUtils.setField(
+            service,
+            "serviceUnderTest",
+            true
+        )
+
+        // Set the field to an invalid value
+        ReflectionTestUtils.setField(
+            service,
+            "resourceURL",
+            "not a valid URL"
+        )
+
+        assertThrows<RuntimeException> {
+            service.initializeServiceAtStartup()
+        }
     }
 
     @Test
