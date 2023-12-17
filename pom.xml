@@ -39,8 +39,7 @@
         <sonar.links.scm>https://github.com/mrhoeve/wrp</sonar.links.scm>
         <sonar.coverage.exclusions>
             **/WebsiteregisterRijksoverheidParserApplication.kt
-            **/CaffeineCacheConfig.kt,
-            **/RegisterMetadata.kt
+            **/CaffeineCacheConfig.kt
         </sonar.coverage.exclusions>
         <maven-release-plugin.version>2.5.3</maven-release-plugin.version>
     </properties>
