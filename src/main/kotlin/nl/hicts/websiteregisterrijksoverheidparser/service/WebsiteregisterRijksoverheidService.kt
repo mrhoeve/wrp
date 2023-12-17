@@ -25,7 +25,6 @@ import org.springframework.web.client.RestTemplate
 import java.io.File
 import java.io.FileOutputStream
 import java.net.URI
-import java.net.URL
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import kotlin.math.roundToInt
@@ -110,7 +109,7 @@ open class WebsiteregisterRijksoverheidService(val objectMapper: ObjectMapper) {
      */
     private fun determineDomain() {
         try {
-            val url = URL(resourceURL)
+            val url = URI.create(resourceURL).toURL()
             if(url.port != -1) {
                 domain = url.protocol.plus("://").plus(url.host).plus(":").plus(url.port)
             } else {

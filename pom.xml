@@ -4,12 +4,12 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.1.5</version>
+        <version>3.2.0</version>
         <relativePath /> <!-- lookup parent from repository -->
     </parent>
     <groupId>nl.hicts</groupId>
     <artifactId>WebsiteregisterRijksoverheidParser</artifactId>
-    <version>1.2-SNAPSHOT</version>
+    <version>1.3-SNAPSHOT</version>
     <name>WebsiteregisterRijksoverheidParser</name>
     <description>WebsiteregisterRijksoverheidParser</description>
     <developers>
@@ -20,7 +20,7 @@
     </developers>
     <properties>
         <!-- versions related to Spring boot -->
-        <java.version>17</java.version>
+        <java.version>21</java.version>
         <kotlin.version>1.9.20</kotlin.version>
         <caffeine.version>3.1.8</caffeine.version>
         <odfdom.version>0.11.0</odfdom.version>
@@ -28,6 +28,9 @@
         <jsoup.version>1.16.2</jsoup.version>
         <snakeyaml.version>2.2</snakeyaml.version>
         <json.version>20231013</json.version>
+        <commons-compress.version>1.25.0</commons-compress.version>
+        <logback.version>1.4.12</logback.version>
+        <jackson-bom.version>2.16.0</jackson-bom.version>
         <sonar.projectKey>mrhoeve_wrp</sonar.projectKey>
         <sonar.organization>mrhoeve</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
@@ -77,12 +80,21 @@
                     <groupId>org.json</groupId>
                     <artifactId>json</artifactId>
                 </exclusion>
+                <exclusion>
+                    <artifactId>commons-compress</artifactId>
+                    <groupId>org.apache.commons</groupId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
             <version>${json.version}</version>
+        </dependency>
+        <dependency>
+            <artifactId>commons-compress</artifactId>
+            <groupId>org.apache.commons</groupId>
+            <version>${commons-compress.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jsoup</groupId>
@@ -97,10 +109,11 @@
         </dependency>
         <dependency>
             <groupId>org.wiremock</groupId>
-            <artifactId>wiremock</artifactId>
+            <artifactId>wiremock-standalone</artifactId>
             <version>${wiremock.version}</version>
             <scope>test</scope>
         </dependency>
+
     </dependencies>
 
     <build>
@@ -141,7 +154,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.8</version>
+                <version>0.8.11</version>
                 <executions>
                     <execution>
                         <goals>
