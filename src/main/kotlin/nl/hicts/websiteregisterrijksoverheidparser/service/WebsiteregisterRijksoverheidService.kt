@@ -2,13 +2,11 @@ package nl.hicts.websiteregisterrijksoverheidparser.service
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import nl.hicts.websiteregisterrijksoverheidparser.model.RegisterMetadata
-import org.jsoup.Jsoup
 import org.odftoolkit.odfdom.doc.OdfSpreadsheetDocument
 import org.odftoolkit.odfdom.doc.table.OdfTable
 import org.odftoolkit.odfdom.doc.table.OdfTableRow
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.cache.CacheManager
 import org.springframework.cache.annotation.CacheConfig
@@ -28,17 +26,16 @@ import java.net.URI
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import kotlin.math.roundToInt
-import kotlin.system.exitProcess
 
 
 @Service
 @CacheConfig(cacheNames = ["data", "metadata"])
-open class WebsiteregisterRijksoverheidService(val objectMapper: ObjectMapper) {
-    companion object {
-        private const val baseDomain = "https://www.communicatierijk.nl"
-        const val baseResourceURL =
-            "${baseDomain}/vakkennis/rijkswebsites/verplichte-richtlijnen/websiteregister-rijksoverheid"
-    }
+class WebsiteregisterRijksoverheidService(
+    val resourceHelperService: ResourceHelperService,
+    val callbackService: CallbackService,
+    val exitProcessService: ExitProcessService,
+    val objectMapper: ObjectMapper
+) {
 
     @Autowired
     private lateinit var cacheManager: CacheManager
@@ -48,14 +45,6 @@ open class WebsiteregisterRijksoverheidService(val objectMapper: ObjectMapper) {
      * Used semi-static variables
      * these are only changed when a (new) register is discovered
      */
-    @Value("\${resourceurl:$baseResourceURL}")
-    private lateinit var resourceURL: String
-    @Value("\${callbackurl:}")
-    private var callbackURL: String? = null
-    @Value("\${callbackparameter:}")
-    private var callbackparameter: String? = null
-
-    private lateinit var domain: String
     private var tempFile: File? = null
     private var documentURL: String? = null
     private var registerMetadata: RegisterMetadata? = null
@@ -70,17 +59,11 @@ open class WebsiteregisterRijksoverheidService(val objectMapper: ObjectMapper) {
     private var data = mutableListOf<MutableMap<String, String>>()
 
     /**
-     * This variable is only set in de unittest `domain could not be determined`
-     * When set to true, it prevents calling exitProcess
-     */
-    private var serviceUnderTest: Boolean = false
-
-    /**
      * Serves [registerMetadata] as json from the cache
      * When the cache doesn't contain the metadata-key, all data is reloaded into the cache
      */
     @Cacheable(cacheNames = ["metadata"])
-    open fun getMetadata(): String {
+    fun getMetadata(): String {
         if ((cacheManager.getCache("metadata") as CaffeineCache).nativeCache.asMap()?.values?.firstOrNull() == null) {
             processFile()
         }
@@ -92,7 +75,7 @@ open class WebsiteregisterRijksoverheidService(val objectMapper: ObjectMapper) {
      * When the cache doesn't contain the data-key, all data is reloaded into the cache
      */
     @Cacheable(cacheNames = ["data"])
-    open fun getRegisterData(): String {
+    fun getRegisterData(): String {
         if ((cacheManager.getCache("data") as CaffeineCache).nativeCache.asMap()?.values?.firstOrNull() == null) {
             processFile()
         }
@@ -115,18 +98,10 @@ open class WebsiteregisterRijksoverheidService(val objectMapper: ObjectMapper) {
      */
     private fun determineDomain() {
         try {
-            val url = URI.create(resourceURL).toURL()
-            if(url.port != -1) {
-                domain = url.protocol.plus("://").plus(url.host).plus(":").plus(url.port)
-            } else {
-                domain = url.protocol.plus("://").plus(url.host)
-            }
+            resourceHelperService.determineDomain()
         } catch (t: Throwable) {
-            logger.error("Unable to parse resourceURL '${resourceURL}', could not determine domain. Exiting application")
-            // If the service is not under test, then this is irrecovarable
-            if (!serviceUnderTest) exitProcess(1)
-            // Otherwise, throw a RuntimeException
-            throw RuntimeException()
+            logger.error("${t.message?.plus(" ")}Exiting application")
+            exitProcessService.terminateApplicationWithError()
         }
     }
 
@@ -134,14 +109,14 @@ open class WebsiteregisterRijksoverheidService(val objectMapper: ObjectMapper) {
      * When the application starts, this method loads the current register.
      * When the application is running, this method is scheduled to run every whole hour.
      * It can also be triggered to run by calling the /checkfornew endpoint
-     * It performs a check if there's a new version of the register on the [resourceURL].
+     * It performs a check if there's a new version of the register on the [ResourceHelperService.resourceURL].
      * If it's true, is starts loading the new register.
-     * When [callbackURL] is not null or blank, a callback is executed after loading the new register
+     * When [CallbackService.callbackURL] is not null or blank, a callback is executed after loading the new register
      */
     @Scheduled(cron = "@hourly")
     fun checkForNewRegister() {
         logger.info("Checking for new register")
-        val retrievedDocumentURL = determineDocumentURL()
+        val retrievedDocumentURL = resourceHelperService.determineDocumentURL()
         retrievedDocumentURL?.let { retrieved ->
             if (retrieved == documentURL) {
                 logger.info("No new register found -- keeping current one")
@@ -158,52 +133,9 @@ open class WebsiteregisterRijksoverheidService(val objectMapper: ObjectMapper) {
                 downloadFileToTemp(retrieved)
                 clearCachedDataAndInvalidateCache()
                 processFile()
-                performCallback()
+                callbackService.performCallback()
             } catch (t: Throwable) {
                 logger.error("Unexpected error occurred.", t)
-            }
-        }
-    }
-
-    /**
-     * Loads the [resourceURL] and searches for a tag containing the text '(ods,'.
-     * When found, it retrieves the given href thus resulting in a relative path to the register.
-     * This path gets prefixed with the domain, resulting in a absolute path
-     */
-    private fun determineDocumentURL(): String? {
-        var linkToDocument: String? = null
-        try {
-            val doc = Jsoup.connect(resourceURL).get()
-            linkToDocument =
-                doc.select("a").firstOrNull { it.text().contains("(ods,", true) }?.attributes()?.get("href")
-        } catch (t: Throwable) {
-            logger.error("Unable to connect to $resourceURL", t)
-        }
-        linkToDocument?.run {
-            return domain.plus(linkToDocument)
-        } ?: run {
-            logger.error("Could not determine link to the registerdocument")
-            return null
-        }
-    }
-
-    /**
-     * Loads the [resourceURL] and searches for a tag containing the text '(ods,'.
-     * When found, it retrieves the given href thus resulting in a relative path to the register.
-     * This path gets prefixed with the domain, resulting in a absolute path
-     */
-    private fun performCallback() {
-        if(callbackURL?.isBlank() == false) {
-            try {
-                val completeCallbackURL = if(callbackparameter?.isBlank() == false) {
-                    "$callbackURL?$callbackparameter"
-                } else {
-                    "$callbackURL"
-                }
-                val callbackResponse = Jsoup.connect(completeCallbackURL).get()
-                logger.info("Callback to $callbackURL executed, response document:\n$callbackResponse")
-            } catch (t: Throwable) {
-                logger.error("Unable to perform callback to $callbackURL", t)
             }
         }
     }
@@ -216,7 +148,7 @@ open class WebsiteregisterRijksoverheidService(val objectMapper: ObjectMapper) {
         tempFile = restTemplate.execute(URI(givenDocumentURL), HttpMethod.GET, null) { clientHttpResponse ->
             val ret: File = File.createTempFile("document", ".ods")
             tempFile = ret
-            StreamUtils.copy(clientHttpResponse.getBody(), FileOutputStream(ret))
+            StreamUtils.copy(clientHttpResponse.body, FileOutputStream(ret))
             ret
         }
     }
@@ -225,7 +157,7 @@ open class WebsiteregisterRijksoverheidService(val objectMapper: ObjectMapper) {
      * Clears all cached data and deletes the registerMetadata.
      */
     @CacheEvict(value = ["data", "metadata"], allEntries = true)
-    open fun clearCachedDataAndInvalidateCache() {
+    fun clearCachedDataAndInvalidateCache() {
         clearCachedData()
         registerMetadata = null
     }

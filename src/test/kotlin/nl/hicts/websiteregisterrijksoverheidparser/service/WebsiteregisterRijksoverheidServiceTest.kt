@@ -13,6 +13,10 @@ import com.github.tomakehurst.wiremock.client.WireMock.*
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo
 import com.github.tomakehurst.wiremock.junit5.WireMockTest
 import com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED
+import io.mockk.every
+import io.mockk.mockk
+import nl.hicts.websiteregisterrijksoverheidparser.exception.ExitProcessServiceCalledException
+import nl.hicts.websiteregisterrijksoverheidparser.exception.UnableToDetermineDomainException
 import nl.hicts.websiteregisterrijksoverheidparser.model.RegisterMetadata
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -44,6 +48,11 @@ class WebsiteregisterRijksoverheidServiceTest {
     private val objectMapper = createObjectMapperWithDeserializationOfZonedDateTime()
     private val cacheManager: CacheManager = createCacheManagerForTesting()
 
+    private val resourceHelperService = ResourceHelperService()
+    private val callbackService = CallbackService()
+    private val exitProcessServiceMock: ExitProcessService = mockk()
+    private val exitProcessServiceCalledExceptionMessage = "thrown from test"
+
     private lateinit var service: WebsiteregisterRijksoverheidService
     private lateinit var defaultDomain: String
     private lateinit var wiremockHost: String
@@ -53,7 +62,7 @@ class WebsiteregisterRijksoverheidServiceTest {
     fun setup(wmRuntimeInfo: WireMockRuntimeInfo) {
         // Setup de default domains and resourceURL
         // as defaultResourceURL we'll be using the baseResourceURL
-        val defaultURI = URI(WebsiteregisterRijksoverheidService.baseResourceURL)
+        val defaultURI = URI(ResourceHelperService.baseResourceURL)
         defaultResourceURL = if (defaultURI.query != null) {
             defaultURI.path.plus("?").plus(defaultURI.query)
         } else {
@@ -65,8 +74,18 @@ class WebsiteregisterRijksoverheidServiceTest {
         defaultDomain = "$localhost:${wmRuntimeInfo.httpPort}"
         wiremockHost = "$localhost"
 
+        // Make sure that we won't call exitProcess
+        every { exitProcessServiceMock.terminateApplicationWithError() } throws ExitProcessServiceCalledException(
+            exitProcessServiceCalledExceptionMessage
+        )
+
         // Setup service and set de cachemanager via reflection
-        service = WebsiteregisterRijksoverheidService(objectMapper)
+        service = WebsiteregisterRijksoverheidService(
+            resourceHelperService,
+            callbackService,
+            exitProcessServiceMock,
+            objectMapper
+        )
         ReflectionTestUtils.setField(service, "cacheManager", cacheManager)
 
         createWiremockStubbing()
@@ -74,23 +93,21 @@ class WebsiteregisterRijksoverheidServiceTest {
 
     @Test
     fun `domain could not be determined`() {
-        // Prevent shutdown of JVM
-        ReflectionTestUtils.setField(
-            service,
-            "serviceUnderTest",
-            true
+        val resourceHelperServiceMock = mockk<ResourceHelperService>()
+        service = WebsiteregisterRijksoverheidService(
+            resourceHelperServiceMock,
+            callbackService,
+            exitProcessServiceMock,
+            objectMapper
         )
+        every { resourceHelperServiceMock.determineDomain() } throws UnableToDetermineDomainException()
 
-        // Set the field to an invalid value
-        ReflectionTestUtils.setField(
-            service,
-            "resourceURL",
-            "not a valid URL"
-        )
-
-        assertThrows<RuntimeException> {
+        val thrownException = assertThrows<ExitProcessServiceCalledException> {
             service.initializeServiceAtStartup()
         }
+
+        io.mockk.verify { exitProcessServiceMock.terminateApplicationWithError() }
+        assertEquals(exitProcessServiceCalledExceptionMessage, thrownException.message)
     }
 
     @Test
@@ -251,7 +268,7 @@ class WebsiteregisterRijksoverheidServiceTest {
 
     private fun setResourceURL(resourceURL: String? = null) {
         ReflectionTestUtils.setField(
-            service,
+            resourceHelperService,
             "resourceURL",
             resourceURL ?: "http://$defaultDomain$defaultResourceURL"
         )
@@ -259,7 +276,7 @@ class WebsiteregisterRijksoverheidServiceTest {
 
     private fun setCallbackURL() {
         ReflectionTestUtils.setField(
-            service,
+            callbackService,
             "callbackURL",
             "http://$defaultDomain/callback"
         )
@@ -267,7 +284,7 @@ class WebsiteregisterRijksoverheidServiceTest {
 
     private fun setCallbackparameter() {
         ReflectionTestUtils.setField(
-            service,
+            callbackService,
             "callbackparameter",
             "token=xyz"
         )
