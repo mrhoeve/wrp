@@ -6,7 +6,9 @@ import io.mockk.*
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.springframework.cache.caffeine.CaffeineCacheManager
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import org.springframework.test.util.ReflectionTestUtils
 import java.util.concurrent.TimeUnit
 
@@ -43,10 +45,9 @@ class CaffeineCacheConfigTest {
         verify { caffeineBuilderMock.expireAfterAccess(15L, TimeUnit.MINUTES) }
     }
 
-    @Test
-    fun `test non default configuration`() {
-        val duration = 43L
-        val timeUnit = TimeUnit.HOURS
+    @ParameterizedTest
+    @MethodSource("nonDefaultConfigurationTestInput")
+    fun `test non default configuration`(duration: Long, timeUnit: TimeUnit) {
         setCacheDuration(duration.toString())
         setCacheTimeUnit(timeUnit.toString())
 
@@ -72,5 +73,14 @@ class CaffeineCacheConfigTest {
     @AfterEach
     fun `remove all static mockks`() {
         unmockkAll()
+    }
+
+    companion object {
+        @JvmStatic
+        fun nonDefaultConfigurationTestInput() = listOf(
+            Arguments.of(10L, TimeUnit.SECONDS),
+            Arguments.of(20L, TimeUnit.HOURS),
+            Arguments.of(5L, TimeUnit.DAYS)
+        )
     }
 }
