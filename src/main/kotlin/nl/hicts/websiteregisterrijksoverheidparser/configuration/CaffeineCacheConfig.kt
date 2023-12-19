@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Configuration
 import java.util.concurrent.TimeUnit
 
 @Configuration
-open class CaffeineCacheConfig {
+class CaffeineCacheConfig {
     private val logger = LoggerFactory.getLogger(CaffeineCacheConfig::class.java)
 
     @Value("\${cacheduration:}")
@@ -20,7 +20,7 @@ open class CaffeineCacheConfig {
     private lateinit var cacheTimeUnit: String
 
     @Bean
-    open fun cacheManager(): CacheManager {
+    fun cacheManager(): CacheManager {
         val cacheManager = CaffeineCacheManager("data", "metadata")
         cacheManager.setCaffeine(caffeineCacheBuilder())
         return cacheManager
