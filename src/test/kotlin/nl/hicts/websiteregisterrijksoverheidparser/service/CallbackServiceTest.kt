@@ -4,7 +4,7 @@ import io.mockk.*
 import org.jsoup.Connection
 import org.jsoup.Jsoup
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.test.util.ReflectionTestUtils
@@ -37,9 +37,11 @@ class CallbackServiceTest {
 
         service.performCallback()
 
-        verify { Jsoup.connect(withArg {
-            assertTrue(callbackURL == it)
-        }) }
+        verify {
+            Jsoup.connect(withArg {
+                assertTrue(callbackURL == it)
+            })
+        }
     }
 
     @Test
@@ -51,9 +53,11 @@ class CallbackServiceTest {
 
         service.performCallback()
 
-        verify { Jsoup.connect(withArg {
-            assertTrue("$callbackURL?$callbackParams" == it)
-        }) }
+        verify {
+            Jsoup.connect(withArg {
+                assertTrue("$callbackURL?$callbackParams" == it)
+            })
+        }
     }
 
     @Test
@@ -64,9 +68,11 @@ class CallbackServiceTest {
 
         service.performCallback()
 
-        verify { Jsoup.connect(withArg {
-            assertTrue(callbackURL == it)
-        }) }
+        verify {
+            Jsoup.connect(withArg {
+                assertTrue(callbackURL == it)
+            })
+        }
     }
 
     private fun setupCallbackURL() {
@@ -87,7 +93,6 @@ class CallbackServiceTest {
 
     @AfterEach
     fun `remove all static mockks`() {
-        unmockkStatic(Jsoup::class)
+        unmockkAll()
     }
-
 }

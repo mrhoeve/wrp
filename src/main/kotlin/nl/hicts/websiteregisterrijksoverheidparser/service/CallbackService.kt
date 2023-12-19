@@ -18,9 +18,9 @@ class CallbackService {
      * Performs the callback if one is specified
      */
     fun performCallback() {
-        if(callbackURL?.isBlank() == false) {
+        if(!callbackURL.isNullOrBlank()) {
             try {
-                val completeCallbackURL = if(callbackparameter?.isBlank() == false) {
+                val completeCallbackURL = if(!callbackparameter.isNullOrBlank()) {
                     "$callbackURL?$callbackparameter"
                 } else {
                     "$callbackURL"

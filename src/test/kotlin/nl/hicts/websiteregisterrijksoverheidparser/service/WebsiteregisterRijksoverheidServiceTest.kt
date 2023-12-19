@@ -50,6 +50,7 @@ class WebsiteregisterRijksoverheidServiceTest {
 
     private val resourceHelperService = ResourceHelperService()
     private val callbackService = CallbackService()
+    private val fileProcessingService = FileProcessingService(objectMapper)
     private val exitProcessServiceMock: ExitProcessService = mockk()
     private val exitProcessServiceCalledExceptionMessage = "thrown from test"
 
@@ -83,10 +84,11 @@ class WebsiteregisterRijksoverheidServiceTest {
         service = WebsiteregisterRijksoverheidService(
             resourceHelperService,
             callbackService,
+            fileProcessingService,
             exitProcessServiceMock,
-            objectMapper
         )
         ReflectionTestUtils.setField(service, "cacheManager", cacheManager)
+        ReflectionTestUtils.setField(fileProcessingService, "cacheManager", cacheManager)
 
         createWiremockStubbing()
     }
@@ -97,8 +99,8 @@ class WebsiteregisterRijksoverheidServiceTest {
         service = WebsiteregisterRijksoverheidService(
             resourceHelperServiceMock,
             callbackService,
-            exitProcessServiceMock,
-            objectMapper
+            fileProcessingService,
+            exitProcessServiceMock
         )
         every { resourceHelperServiceMock.determineDomain() } throws UnableToDetermineDomainException()
 
@@ -368,7 +370,7 @@ class WebsiteregisterRijksoverheidServiceTest {
             deserializationContext: DeserializationContext?
         ): ZonedDateTime {
             val localDate: LocalDateTime = LocalDateTime.parse(
-                jsonParser.getText(),
+                jsonParser.text,
                 DateTimeFormatter.ISO_DATE_TIME
             )
             return localDate.atZone(ZoneOffset.UTC)
