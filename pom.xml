@@ -4,12 +4,12 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.2.0</version>
+        <version>3.2.3</version>
         <relativePath /> <!-- lookup parent from repository -->
     </parent>
     <groupId>nl.hicts</groupId>
     <artifactId>WebsiteregisterRijksoverheidParser</artifactId>
-    <version>1.3-SNAPSHOT</version>
+    <version>1.5-SNAPSHOT</version>
     <name>WebsiteregisterRijksoverheidParser</name>
     <description>WebsiteregisterRijksoverheidParser</description>
     <developers>
@@ -19,19 +19,19 @@
         </developer>
     </developers>
     <properties>
+        <!-- ivm CVE-2024-22259 een hogere versie van spring-framework gebruiken
+             tot de release van spring-boot-starter-parent 3.2.4 -->
+        <spring-framework.version>6.1.5</spring-framework.version>
         <!-- versions related to Spring boot -->
         <java.version>21</java.version>
-        <kotlin.version>1.9.20</kotlin.version>
+        <kotlin.version>1.9.23</kotlin.version>
         <caffeine.version>3.1.8</caffeine.version>
-        <odfdom.version>0.11.0</odfdom.version>
-        <wiremock.version>3.3.1</wiremock.version>
-        <jsoup.version>1.16.2</jsoup.version>
-        <snakeyaml.version>2.2</snakeyaml.version>
-        <json.version>20231013</json.version>
-        <commons-compress.version>1.25.0</commons-compress.version>
-        <logback.version>1.4.12</logback.version>
-        <jackson-bom.version>2.16.0</jackson-bom.version>
-        <mockk.version>1.13.8</mockk.version>
+        <odfdom.version>0.12.0</odfdom.version>
+        <wiremock-standalone.version>3.4.2</wiremock-standalone.version>
+        <jsoup.version>1.17.2</jsoup.version>
+        <commons-compress.version>1.26.1</commons-compress.version>
+        <jackson-bom.version>2.17.0</jackson-bom.version>
+        <mockk.version>1.13.10</mockk.version>
         <sonar.projectKey>mrhoeve_wrp</sonar.projectKey>
         <sonar.organization>mrhoeve</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
@@ -79,19 +79,14 @@
             <version>${odfdom.version}</version>
             <exclusions>
                 <exclusion>
-                    <groupId>org.json</groupId>
-                    <artifactId>json</artifactId>
-                </exclusion>
-                <exclusion>
                     <artifactId>commons-compress</artifactId>
                     <groupId>org.apache.commons</groupId>
                 </exclusion>
+                <exclusion>
+                    <artifactId>slf4j-simple</artifactId>
+                    <groupId>org.slf4j</groupId>
+                </exclusion>
             </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.json</groupId>
-            <artifactId>json</artifactId>
-            <version>${json.version}</version>
         </dependency>
         <dependency>
             <artifactId>commons-compress</artifactId>
@@ -117,7 +112,7 @@
         <dependency>
             <groupId>org.wiremock</groupId>
             <artifactId>wiremock-standalone</artifactId>
-            <version>${wiremock.version}</version>
+            <version>${wiremock-standalone.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
