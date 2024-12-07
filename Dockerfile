@@ -10,8 +10,17 @@ RUN mvn -f /home/app/pom.xml clean package -DskipTests
 # Package stage
 #
 FROM amazoncorretto:21-alpine
+ENV SERVICE_NAME="wrp"
+
 RUN apk -U upgrade
-COPY --from=build /home/app/target/WebsiteregisterRijksoverheidParser-*.jar /usr/local/lib/WebsiteregisterRijksoverheidParser.jar
+COPY --from=build /home/app/target/WebsiteregisterRijksoverheidParser-*.jar /app/WebsiteregisterRijksoverheidParser.jar
+
+
+RUN addgroup --gid 1001 -S $SERVICE_NAME && \
+    adduser -G $SERVICE_NAME --shell /bin/false --disabled-password -H --uid 1001 $SERVICE_NAME && \
+    mkdir -p /var/log/$SERVICE_NAME && \
+    chown $SERVICE_NAME:$SERVICE_NAME /var/log/$SERVICE_NAME
 EXPOSE 8080
-ENTRYPOINT ["java","-jar", "-XX:+UseSerialGC", "-Xss512k","/usr/local/lib/WebsiteregisterRijksoverheidParser.jar"]
+USER $SERVICE_NAME
+ENTRYPOINT ["java","-jar", "-XX:+UseSerialGC", "-Xss512k","/app/WebsiteregisterRijksoverheidParser.jar"]
 
