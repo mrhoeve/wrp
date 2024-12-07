@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.2.3</version>
+        <version>3.4.0</version>
         <relativePath /> <!-- lookup parent from repository -->
     </parent>
     <groupId>nl.hicts</groupId>
@@ -19,19 +19,15 @@
         </developer>
     </developers>
     <properties>
-        <!-- ivm CVE-2024-22259 een hogere versie van spring-framework gebruiken
-             tot de release van spring-boot-starter-parent 3.2.4 -->
-        <spring-framework.version>6.1.5</spring-framework.version>
         <!-- versions related to Spring boot -->
         <java.version>21</java.version>
-        <kotlin.version>1.9.23</kotlin.version>
-        <caffeine.version>3.1.8</caffeine.version>
+        <kotlin.version>1.9.25</kotlin.version>
         <odfdom.version>0.12.0</odfdom.version>
-        <wiremock-standalone.version>3.4.2</wiremock-standalone.version>
-        <jsoup.version>1.17.2</jsoup.version>
-        <commons-compress.version>1.26.1</commons-compress.version>
-        <jackson-bom.version>2.17.0</jackson-bom.version>
-        <mockk.version>1.13.10</mockk.version>
+        <jena-iri.version>4.10.0</jena-iri.version>
+        <wiremock-standalone.version>3.10.0</wiremock-standalone.version>
+        <jsoup.version>1.18.3</jsoup.version>
+        <commons-compress.version>1.27.1</commons-compress.version>
+        <mockk.version>1.13.13</mockk.version>
         <sonar.projectKey>mrhoeve_wrp</sonar.projectKey>
         <sonar.organization>mrhoeve</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
@@ -41,8 +37,62 @@
             **/WebsiteregisterRijksoverheidParserApplication.kt,
             **/ExitProcessService.kt
         </sonar.coverage.exclusions>
-        <maven-release-plugin.version>2.5.3</maven-release-plugin.version>
+        <maven-release-plugin.version>3.1.1</maven-release-plugin.version>
     </properties>
+    <dependencyManagement>
+       <dependencies>
+           <dependency>
+               <groupId>org.odftoolkit</groupId>
+               <artifactId>odfdom-java</artifactId>
+               <version>${odfdom.version}</version>
+               <exclusions>
+                   <exclusion>
+                       <artifactId>commons-io</artifactId>
+                       <groupId>commons-io</groupId>
+                   </exclusion>
+                   <exclusion>
+                       <artifactId>commons-compress</artifactId>
+                       <groupId>org.apache.commons</groupId>
+                   </exclusion>
+                   <exclusion>
+                       <artifactId>slf4j-simple</artifactId>
+                       <groupId>org.slf4j</groupId>
+                   </exclusion>
+                   <exclusion>
+                       <artifactId>jena-iri</artifactId>
+                       <groupId>org.apache.jena</groupId>
+                   </exclusion>
+               </exclusions>
+           </dependency>
+           <dependency>
+               <artifactId>commons-compress</artifactId>
+               <groupId>org.apache.commons</groupId>
+               <version>${commons-compress.version}</version>
+           </dependency>
+           <dependency>
+               <groupId>org.jsoup</groupId>
+               <artifactId>jsoup</artifactId>
+               <version>${jsoup.version}</version>
+           </dependency>
+           <dependency>
+               <groupId>org.wiremock</groupId>
+               <artifactId>wiremock-standalone</artifactId>
+               <version>${wiremock-standalone.version}</version>
+               <scope>test</scope>
+           </dependency>
+           <dependency>
+               <groupId>io.mockk</groupId>
+               <artifactId>mockk-jvm</artifactId>
+               <version>${mockk.version}</version>
+               <scope>test</scope>
+           </dependency>
+           <dependency>
+               <groupId>org.apache.jena</groupId>
+               <artifactId>jena-iri</artifactId>
+               <version>${jena-iri.version}</version>
+           </dependency>
+       </dependencies>
+    </dependencyManagement>
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -59,7 +109,6 @@
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
-            <version>${caffeine.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.module</groupId>
@@ -76,27 +125,18 @@
         <dependency>
             <groupId>org.odftoolkit</groupId>
             <artifactId>odfdom-java</artifactId>
-            <version>${odfdom.version}</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>commons-compress</artifactId>
-                    <groupId>org.apache.commons</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>slf4j-simple</artifactId>
-                    <groupId>org.slf4j</groupId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <artifactId>commons-compress</artifactId>
             <groupId>org.apache.commons</groupId>
-            <version>${commons-compress.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jsoup</groupId>
             <artifactId>jsoup</artifactId>
-            <version>${jsoup.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.jena</groupId>
+            <artifactId>jena-iri</artifactId>
         </dependency>
 
         <dependency>
@@ -112,13 +152,11 @@
         <dependency>
             <groupId>org.wiremock</groupId>
             <artifactId>wiremock-standalone</artifactId>
-            <version>${wiremock-standalone.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.mockk</groupId>
             <artifactId>mockk-jvm</artifactId>
-            <version>${mockk.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

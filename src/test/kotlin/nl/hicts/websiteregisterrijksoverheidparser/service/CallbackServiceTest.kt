@@ -15,7 +15,7 @@ class CallbackServiceTest {
     private val callbackParams = "test"
 
     private val service = CallbackService()
-    private val connectionMock = mockk<Connection>()
+    private val connectionMock: Connection = mockk()
 
     @BeforeEach
     fun setUp() {
@@ -26,7 +26,7 @@ class CallbackServiceTest {
     @Test
     fun `performCallback without specified callbackURL does nothing`() {
         service.performCallback()
-        verify { connectionMock.get() wasNot called }
+        verify { connectionMock wasNot called }
     }
 
     @Test
