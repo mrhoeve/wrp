@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.4.0</version>
+        <version>3.4.1</version>
         <relativePath /> <!-- lookup parent from repository -->
     </parent>
     <groupId>nl.hicts</groupId>
@@ -38,6 +38,8 @@
             **/ExitProcessService.kt
         </sonar.coverage.exclusions>
         <maven-release-plugin.version>3.1.1</maven-release-plugin.version>
+        <!-- overrides due to CVE's -->
+        <logback.version>1.5.15</logback.version>
     </properties>
     <dependencyManagement>
        <dependencies>
@@ -101,6 +103,10 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -219,6 +225,25 @@
                 <groupId>org.sonarsource.scanner.maven</groupId>
                 <artifactId>sonar-maven-plugin</artifactId>
                 <version>3.9.1.2184</version>
+            </plugin>
+            <!-- create a sbom, see https://www.baeldung.com/spring-boot-actuators -->
+            <plugin>
+                <groupId>org.cyclonedx</groupId>
+                <artifactId>cyclonedx-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>makeAggregateBom</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <projectType>application</projectType>
+                    <outputDirectory>${project.build.outputDirectory}/META-INF/sbom</outputDirectory>
+                    <outputFormat>json</outputFormat>
+                    <outputName>application.cdx</outputName>
+                </configuration>
             </plugin>
         </plugins>
     </build>
