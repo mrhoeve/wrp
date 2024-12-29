@@ -55,7 +55,7 @@ This application loads the websiteregister from the Dutch government. The data i
     }
 ]
 ```
-`/metadata` returns the metadata, linke columnheaders. Example response:
+`/metadata` returns the metadata, like columnheaders. Example response:
 ```json
 {
     "documentURL": "https://www.communicatierijk.nl/binaries/communicatierijk/documenten/publicaties/2016/05/26/websiteregister/websiteregister-rijksoverheid-2022-08-26.ods",
@@ -111,10 +111,10 @@ services:
 # Environment variables
 `resourceurl` defaults to `https://www.communicatierijk.nl/vakkennis/rijkswebsites/verplichte-richtlijnen/websiteregister-rijksoverheid`. Use `callbackurl` to specify the page that must be notified when a new datafile is detected. When `callbackparameter` is specified, the callbackurl is appended with `?` and the given value.
 
-Using `cacheduration` the cache can be configured to how long it should stay alive. When no value, or a illegal value, has been set, it defaults to `15`. The `cachetimeunit` determines the timeunit that's being used. One of the following values can be used:
+Using `cacheduration` the cache can be configured to how long it should stay alive. When no value, or an illegal value, has been set, it defaults to `15`. The `cachetimeunit` determines the timeunit that's being used. One of the following values can be used:
 * SECONDS
 * MINUTES
 * HOURS
 * DAYS
 
-When no value, of a illegal value, has been set, it defaults to `MINUTES`.
+When no value, or an illegal value, has been set, it defaults to `MINUTES`.
