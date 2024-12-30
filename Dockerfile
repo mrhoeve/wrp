@@ -13,6 +13,7 @@ FROM amazoncorretto:21-alpine
 ENV SERVICE_NAME="wrp"
 
 RUN apk -U upgrade
+RUN apk add --update curl && rm -rf /var/cache/apk/*
 COPY --from=build /home/app/target/WebsiteregisterRijksoverheidParser-*.jar /app/WebsiteregisterRijksoverheidParser.jar
 
 
