@@ -12,7 +12,7 @@ class ResourceHelperService {
     companion object {
         private const val baseDomain = "https://www.communicatierijk.nl"
         const val baseResourceURL =
-            "${baseDomain}/vakkennis/rijkswebsites/verplichte-richtlijnen/websiteregister-rijksoverheid"
+            "${baseDomain}/documenten/2016/05/26/websiteregister"
     }
 
     private val logger = LoggerFactory.getLogger(ResourceHelperService::class.java)
@@ -49,16 +49,18 @@ class ResourceHelperService {
         try {
             val doc = Jsoup.connect(resourceURL).get()
             linkToDocument =
-                doc.select("a").firstOrNull { it.text().contains("(ods,", true) }?.attributes()?.get("href")
+                doc.select("a").firstOrNull { it.attributes()["href"].contains(".ods", true) }?.attributes()?.get("href")
         } catch (t: Throwable) {
             logger.error("Unable to connect to $resourceURL", t)
         }
-        linkToDocument?.run {
-            return domain.plus(linkToDocument)
-        } ?: run {
+        if (linkToDocument == null) {
             logger.error("Could not determine link to the registerdocument")
             return null
         }
+        if (linkToDocument.startsWith("http", true)) {
+            return linkToDocument
+        }
+        return domain.plus(linkToDocument)
     }
 
 }

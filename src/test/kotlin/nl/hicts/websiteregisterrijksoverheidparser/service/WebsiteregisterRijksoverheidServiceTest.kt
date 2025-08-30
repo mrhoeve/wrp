@@ -298,7 +298,7 @@ class WebsiteregisterRijksoverheidServiceTest {
         stubFor(
             get(defaultResourceURL).inScenario("ResourceURL")
                 .whenScenarioStateIs(STARTED)
-                .willReturn(ok(validHTMLContaingTag(binaryLinkWithOneSite())))
+                .willReturn(okTextXml(validHTMLContaingTag(binaryLinkWithOneSite())))
                 .willSetStateTo("Serve second resource")
         )
 
@@ -306,7 +306,7 @@ class WebsiteregisterRijksoverheidServiceTest {
         stubFor(
             get(defaultResourceURL).inScenario("ResourceURL")
                 .whenScenarioStateIs("Serve second resource")
-                .willReturn(ok(validHTMLContaingTag(binaryLinkWithTwoSites())))
+                .willReturn(okTextXml(validHTMLContaingTag(binaryLinkWithTwoSites())))
         )
 
         // Give an 200 response on the callback

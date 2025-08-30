@@ -117,7 +117,7 @@ services:
       cachetimeunit: cachetimeunit
 ```
 # Environment variables
-`resourceurl` defaults to `https://www.communicatierijk.nl/vakkennis/rijkswebsites/verplichte-richtlijnen/websiteregister-rijksoverheid`. Use `callbackurl` to specify the page that must be notified when a new datafile is detected. When `callbackparameter` is specified, the callbackurl is appended with `?` and the given value.
+`resourceurl` defaults to `https://www.communicatierijk.nl/documenten/2016/05/26/websiteregister`. Use `callbackurl` to specify the page that must be notified when a new datafile is detected. When `callbackparameter` is specified, the callbackurl is appended with `?` and the given value.
 
 Using `cacheduration` the cache can be configured to how long it should stay alive. When no value, or an illegal value, has been set, it defaults to `15`. The `cachetimeunit` determines the timeunit that's being used. One of the following values can be used:
 * SECONDS
