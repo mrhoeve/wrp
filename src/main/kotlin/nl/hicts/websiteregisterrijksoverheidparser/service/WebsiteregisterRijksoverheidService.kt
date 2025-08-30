@@ -39,27 +39,27 @@ class WebsiteregisterRijksoverheidService(
     private var documentURL: String? = null
 
     /**
-     * Serves [FileProcessingService.registerMetadata] as json from the cache
+     * Serves [FileProcessingService.registerMetadata] as JSON from the cache
      * When the cache doesn't contain the metadata-key, all data is reloaded into the cache
      */
     @Cacheable(cacheNames = ["metadata"])
     fun getMetadata(): String {
-        if ((cacheManager.getCache("metadata") as CaffeineCache).nativeCache.asMap()?.values?.firstOrNull() == null) {
+        if ((cacheManager.getCache("metadata") as CaffeineCache).nativeCache.asMap().values.firstOrNull() == null) {
             processFile()
         }
-        return (cacheManager.getCache("metadata") as CaffeineCache).nativeCache.asMap()?.values?.first() as String
+        return (cacheManager.getCache("metadata") as CaffeineCache).nativeCache.asMap().values.first() as String
     }
 
     /**
-     * Serves [FileProcessingService.data] as json from the cache
+     * Serves [FileProcessingService.data] as JSON from the cache
      * When the cache doesn't contain the data-key, all data is reloaded into the cache
      */
     @Cacheable(cacheNames = ["data"])
     fun getRegisterData(): String {
-        if ((cacheManager.getCache("data") as CaffeineCache).nativeCache.asMap()?.values?.firstOrNull() == null) {
+        if ((cacheManager.getCache("data") as CaffeineCache).nativeCache.asMap().values.firstOrNull() == null) {
             processFile()
         }
-        val result = (cacheManager.getCache("data") as CaffeineCache).nativeCache.asMap()?.values?.first() as String
+        val result = (cacheManager.getCache("data") as CaffeineCache).nativeCache.asMap().values.first() as String
         return result
     }
 

@@ -63,7 +63,7 @@ class WebsiteregisterRijksoverheidServiceTest {
     fun setup(wmRuntimeInfo: WireMockRuntimeInfo) {
         // Setup de default domains and resourceURL
         // as defaultResourceURL we'll be using the baseResourceURL
-        val defaultURI = URI(ResourceHelperService.baseResourceURL)
+        val defaultURI = URI(ResourceHelperService.BASE_RESOURCE_URL)
         defaultResourceURL = if (defaultURI.query != null) {
             defaultURI.path.plus("?").plus(defaultURI.query)
         } else {

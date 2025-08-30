@@ -10,14 +10,14 @@ import java.net.URI
 @Service
 class ResourceHelperService {
     companion object {
-        private const val baseDomain = "https://www.communicatierijk.nl"
-        const val baseResourceURL =
-            "${baseDomain}/documenten/2016/05/26/websiteregister"
+        private const val BASE_DOMAIN = "https://www.communicatierijk.nl"
+        const val BASE_RESOURCE_URL =
+            "${BASE_DOMAIN}/documenten/2016/05/26/websiteregister"
     }
 
     private val logger = LoggerFactory.getLogger(ResourceHelperService::class.java)
 
-    @Value("\${resourceurl:$baseResourceURL}")
+    @Value("\${resourceurl:$BASE_RESOURCE_URL}")
     private lateinit var resourceURL: String
 
     private lateinit var domain: String
@@ -34,15 +34,15 @@ class ResourceHelperService {
             } else {
                 url.protocol.plus("://").plus(url.host)
             }
-        } catch (t: Throwable) {
+        } catch (_: Throwable) {
             throw UnableToDetermineDomainException("Unable to parse resourceURL '${resourceURL}', could not determine domain.")
         }
     }
 
     /**
-     * Loads the [resourceURL] and searches for a tag containing the text '(ods,'.
+     * Loads the [resourceURL] and searches for a tag containing '.ods' in the href attribute.
      * When found, it retrieves the given href thus resulting in a relative path to the register.
-     * This path gets prefixed with the domain, resulting in an absolute path
+     * This path gets prefixed with the domain, resulting in an absolute path.
      */
     fun determineDocumentURL(): String? {
         var linkToDocument: String? = null
