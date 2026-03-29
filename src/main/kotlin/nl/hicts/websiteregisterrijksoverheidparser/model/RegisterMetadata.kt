@@ -6,8 +6,8 @@ import java.time.ZonedDateTime
 
 data class RegisterMetadata(
     val documentURL: String,
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-    @JsonProperty("discoveryDateTimeUTC")
+    @param:JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+    @param:JsonProperty("discoveryDateTimeUTC")
     val discoveryDateTime: ZonedDateTime,
     val registersFound: Int,
     val columnHeaders: List<String>

@@ -6,8 +6,8 @@ import nl.hicts.websiteregisterrijksoverheidparser.controller.CustomHealthContro
 import nl.hicts.websiteregisterrijksoverheidparser.controller.CustomHealthController.Companion.UP
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
-import org.springframework.boot.actuate.health.HealthEndpoint
-import org.springframework.boot.actuate.health.Status
+import org.springframework.boot.health.contributor.Status
+import org.springframework.boot.health.actuate.endpoint.HealthEndpoint
 import org.springframework.http.HttpStatus
 
 class CustomHealthControllerTest {

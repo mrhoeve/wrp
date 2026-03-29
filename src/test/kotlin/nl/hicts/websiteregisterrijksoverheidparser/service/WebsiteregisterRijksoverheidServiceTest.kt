@@ -1,13 +1,10 @@
 package nl.hicts.websiteregisterrijksoverheidparser.service
 
-import com.fasterxml.jackson.core.JsonParser
-import com.fasterxml.jackson.databind.DeserializationContext
-import com.fasterxml.jackson.databind.JsonDeserializer
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.databind.module.SimpleModule
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import tools.jackson.core.JsonParser
+import tools.jackson.databind.DeserializationContext
+import tools.jackson.databind.ObjectMapper
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.databind.module.SimpleModule
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.github.tomakehurst.wiremock.client.WireMock.*
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo
@@ -27,6 +24,10 @@ import org.skyscreamer.jsonassert.JSONAssert
 import org.springframework.cache.CacheManager
 import org.springframework.cache.caffeine.CaffeineCacheManager
 import org.springframework.test.util.ReflectionTestUtils
+import tools.jackson.databind.ValueDeserializer
+import tools.jackson.databind.cfg.DateTimeFeature
+import tools.jackson.module.kotlin.KotlinModule
+
 import java.io.IOException
 import java.net.URI
 import java.time.LocalDateTime
@@ -340,11 +341,11 @@ class WebsiteregisterRijksoverheidServiceTest {
 
     // Create an specialized objectMapper including deserialization of ZonedDateTime (used in testing only)
     private fun createObjectMapperWithDeserializationOfZonedDateTime(): ObjectMapper {
-        return ObjectMapper().registerKotlinModule()
-            .registerModule(JavaTimeModule())
-            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-            .disable(SerializationFeature.WRITE_DATES_WITH_CONTEXT_TIME_ZONE)
-            .registerModule(SimpleModule().addDeserializer(ZonedDateTime::class.java, ZonedDateTimeDeserializer()))
+        return JsonMapper.builder()
+            .addModule(KotlinModule.Builder().build())
+            .addModule(SimpleModule().addDeserializer(ZonedDateTime::class.java, ZonedDateTimeDeserializer()))
+            .disable(DateTimeFeature.WRITE_DATES_WITH_CONTEXT_TIME_ZONE)
+            .build()
     }
 
     // Create a specialized cachemanager for testing
@@ -363,7 +364,7 @@ class WebsiteregisterRijksoverheidServiceTest {
     }
 
     // Class used for deserialization of ZonedDateTime
-    class ZonedDateTimeDeserializer : JsonDeserializer<ZonedDateTime?>() {
+    class ZonedDateTimeDeserializer : ValueDeserializer<ZonedDateTime?>() {
         @Throws(IOException::class)
         override fun deserialize(
             jsonParser: JsonParser,

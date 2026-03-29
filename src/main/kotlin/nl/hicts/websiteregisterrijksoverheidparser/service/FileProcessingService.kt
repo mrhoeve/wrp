@@ -1,6 +1,6 @@
 package nl.hicts.websiteregisterrijksoverheidparser.service
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
 import nl.hicts.websiteregisterrijksoverheidparser.model.RegisterMetadata
 import org.odftoolkit.odfdom.doc.OdfSpreadsheetDocument
 import org.odftoolkit.odfdom.doc.table.OdfTable

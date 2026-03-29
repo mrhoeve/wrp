@@ -1,8 +1,8 @@
 package nl.hicts.websiteregisterrijksoverheidparser.controller
 
 import org.springframework.web.bind.annotation.RestController
-import org.springframework.boot.actuate.health.HealthEndpoint
-import org.springframework.boot.actuate.health.Status
+import org.springframework.boot.health.contributor.Status
+import org.springframework.boot.health.actuate.endpoint.HealthEndpoint
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
