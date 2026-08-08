@@ -23,7 +23,7 @@
         <java.version>21</java.version>
         <odfdom.version>0.13.0</odfdom.version>
         <wiremock-standalone.version>3.13.2</wiremock-standalone.version>
-        <jsoup.version>1.22.1</jsoup.version>
+        <jsoup.version>1.23.1</jsoup.version>
         <mockk.version>1.14.9</mockk.version>
         <sonar.projectKey>mrhoeve_wrp</sonar.projectKey>
         <sonar.organization>mrhoeve</sonar.organization>
