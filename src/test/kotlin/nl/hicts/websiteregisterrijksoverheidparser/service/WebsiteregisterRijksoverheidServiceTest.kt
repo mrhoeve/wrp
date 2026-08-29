@@ -24,6 +24,7 @@ import org.skyscreamer.jsonassert.JSONAssert
 import org.springframework.cache.CacheManager
 import org.springframework.cache.caffeine.CaffeineCacheManager
 import org.springframework.test.util.ReflectionTestUtils
+import org.springframework.web.client.RestClient
 import tools.jackson.databind.ValueDeserializer
 import tools.jackson.databind.cfg.DateTimeFeature
 import tools.jackson.module.kotlin.KotlinModule
@@ -49,8 +50,9 @@ class WebsiteregisterRijksoverheidServiceTest {
     private val objectMapper = createObjectMapperWithDeserializationOfZonedDateTime()
     private val cacheManager: CacheManager = createCacheManagerForTesting()
 
-    private val resourceHelperService = ResourceHelperService()
-    private val callbackService = CallbackService()
+    private val remoteResourceClient = RemoteResourceClient(RestClient.builder())
+    private val resourceHelperService = ResourceHelperService(remoteResourceClient)
+    private val callbackService = CallbackService(remoteResourceClient)
     private val fileProcessingService = FileProcessingService(objectMapper, OdsRegisterParser())
     private val exitProcessServiceMock: ExitProcessService = mockk()
     private val exitProcessServiceCalledExceptionMessage = "thrown from test"
@@ -87,6 +89,7 @@ class WebsiteregisterRijksoverheidServiceTest {
             callbackService,
             fileProcessingService,
             exitProcessServiceMock,
+            remoteResourceClient,
         )
         ReflectionTestUtils.setField(service, "cacheManager", cacheManager)
         ReflectionTestUtils.setField(fileProcessingService, "cacheManager", cacheManager)
@@ -101,7 +104,8 @@ class WebsiteregisterRijksoverheidServiceTest {
             resourceHelperServiceMock,
             callbackService,
             fileProcessingService,
-            exitProcessServiceMock
+            exitProcessServiceMock,
+            remoteResourceClient,
         )
         every { resourceHelperServiceMock.determineDomain() } throws UnableToDetermineDomainException()
 

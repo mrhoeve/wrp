@@ -2,11 +2,7 @@ package nl.hicts.websiteregisterrijksoverheidparser.service
 
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkStatic
-import io.mockk.unmockkStatic
 import nl.hicts.websiteregisterrijksoverheidparser.exception.UnableToDetermineDomainException
-import org.jsoup.Jsoup
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -15,59 +11,45 @@ import org.springframework.test.util.ReflectionTestUtils
 import java.io.IOException
 
 class ResourceHelperServiceTest {
-    private val service = ResourceHelperService()
+    private val remoteResourceClient: RemoteResourceClient = mockk()
+    private val service = ResourceHelperService(remoteResourceClient)
 
     @Test
     fun `domain could not be determined`() {
-        val invalidResourceURL = "not a valid URL"
+        setResourceURL("not a valid URL")
 
-        setResourceURL(invalidResourceURL)
-
-        val catchedException = assertThrows<UnableToDetermineDomainException> {
+        val caughtException = assertThrows<UnableToDetermineDomainException> {
             service.determineDomain()
         }
-        assertTrue(!catchedException.message.isNullOrEmpty(), "Exception contains a message")
+
+        assertTrue(!caughtException.message.isNullOrEmpty(), "Exception contains a message")
     }
 
     @Test
     fun `domain without port could be determined`() {
         val expectedResult = "https://eendomein.local"
-        val resourceURL = "$expectedResult/eensubdomein"
-
-        setResourceURL(resourceURL)
+        setResourceURL("$expectedResult/eensubdomein")
 
         service.determineDomain()
 
-        val result = ReflectionTestUtils.getField(service, "domain") as String
-
-        assertEquals(expectedResult, result)
+        assertEquals(expectedResult, ReflectionTestUtils.getField(service, "domain"))
     }
 
     @Test
     fun `domain with port could be determined`() {
         val expectedResult = "https://eendomein.local:443"
-        val resourceURL = "$expectedResult/eensubdomein"
-
-        setResourceURL(resourceURL)
+        setResourceURL("$expectedResult/eensubdomein")
 
         service.determineDomain()
 
-        val result = ReflectionTestUtils.getField(service, "domain") as String
-
-        assertEquals(expectedResult, result)
+        assertEquals(expectedResult, ReflectionTestUtils.getField(service, "domain"))
     }
 
-    /**
-     * Only test the unhappy path. The happy path is tested in [WebsiteregisterRijksoverheidServiceTest]
-     */
     @Test
-    fun `determineDocumentURL fails`() {
-        setResourceURL("https://eendomein.local:443/eensubdomein")
-
-        val connectionMock = mockk<org.jsoup.Connection>()
-        mockkStatic(Jsoup::class)
-        every { Jsoup.connect(any()) } returns connectionMock
-        every { connectionMock.get() } throws IOException()
+    fun `determineDocumentURL returns null when retrieving the source page fails`() {
+        val resourceURL = "https://eendomein.local:443/eensubdomein"
+        setResourceURL(resourceURL)
+        every { remoteResourceClient.getText(resourceURL) } throws IOException()
 
         val result = service.determineDocumentURL()
 
@@ -75,15 +57,6 @@ class ResourceHelperServiceTest {
     }
 
     private fun setResourceURL(resourceURL: String) {
-        ReflectionTestUtils.setField(
-            service,
-            "resourceURL",
-            resourceURL
-        )
-    }
-
-    @AfterEach
-    fun `remove all static mockks`() {
-        unmockkStatic(Jsoup::class)
+        ReflectionTestUtils.setField(service, "resourceURL", resourceURL)
     }
 }

@@ -8,7 +8,9 @@ import org.springframework.stereotype.Service
 import java.net.URI
 
 @Service
-class ResourceHelperService {
+class ResourceHelperService(
+    private val remoteResourceClient: RemoteResourceClient,
+) {
     companion object {
         private const val BASE_DOMAIN = "https://www.communicatierijk.nl"
         const val BASE_RESOURCE_URL =
@@ -47,7 +49,7 @@ class ResourceHelperService {
     fun determineDocumentURL(): String? {
         var linkToDocument: String? = null
         try {
-            val doc = Jsoup.connect(resourceURL).get()
+            val doc = Jsoup.parse(remoteResourceClient.getText(resourceURL), resourceURL)
             linkToDocument =
                 doc.select("a").firstOrNull { it.attributes()["href"].contains(".ods", true) }?.attributes()?.get("href")
         } catch (t: Throwable) {

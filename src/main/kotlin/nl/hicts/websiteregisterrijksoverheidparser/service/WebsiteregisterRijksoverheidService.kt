@@ -8,14 +8,9 @@ import org.springframework.cache.annotation.CacheConfig
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.cache.caffeine.CaffeineCache
 import org.springframework.context.event.EventListener
-import org.springframework.http.HttpMethod
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
-import org.springframework.util.StreamUtils
-import org.springframework.web.client.RestTemplate
 import java.io.File
-import java.io.FileOutputStream
-import java.net.URI
 
 
 @Service
@@ -24,7 +19,8 @@ class WebsiteregisterRijksoverheidService(
     val resourceHelperService: ResourceHelperService,
     val callbackService: CallbackService,
     val fileProcessingService: FileProcessingService,
-    val exitProcessService: ExitProcessService
+    val exitProcessService: ExitProcessService,
+    private val remoteResourceClient: RemoteResourceClient,
 ) {
 
     @Autowired
@@ -128,12 +124,6 @@ class WebsiteregisterRijksoverheidService(
      * Downloads the given file at [givenDocumentURL] to a temporary file.
      */
     private fun downloadFileToTemp(givenDocumentURL: String) {
-        val restTemplate = RestTemplate()
-        tempFile = restTemplate.execute(URI(givenDocumentURL), HttpMethod.GET, null) { clientHttpResponse ->
-            val ret: File = File.createTempFile("document", ".ods")
-            tempFile = ret
-            StreamUtils.copy(clientHttpResponse.body, FileOutputStream(ret))
-            ret
-        }
+        tempFile = remoteResourceClient.downloadToTemporaryFile(givenDocumentURL)
     }
 }

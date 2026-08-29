@@ -1,11 +1,8 @@
 package nl.hicts.websiteregisterrijksoverheidparser.service
 
-import io.mockk.*
-import org.jsoup.Connection
-import org.jsoup.Jsoup
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.BeforeEach
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
 import org.junit.jupiter.api.Test
 import org.springframework.test.util.ReflectionTestUtils
 import java.io.IOException
@@ -13,86 +10,52 @@ import java.io.IOException
 class CallbackServiceTest {
     private val callbackURL = "http://localhost"
     private val callbackParams = "test"
-
-    private val service = CallbackService()
-    private val connectionMock: Connection = mockk()
-
-    @BeforeEach
-    fun setUp() {
-        mockkStatic(Jsoup::class)
-        every { Jsoup.connect(any()) } returns connectionMock
-    }
+    private val remoteResourceClient: RemoteResourceClient = mockk()
+    private val service = CallbackService(remoteResourceClient)
 
     @Test
     fun `performCallback without specified callbackURL does nothing`() {
         service.performCallback()
-        verify { connectionMock wasNot called }
+
+        verify(exactly = 0) { remoteResourceClient.getText(any()) }
     }
 
     @Test
     fun `performCallback without params succeeds`() {
         setupCallbackURL()
-
-        every { connectionMock.get() } returns mockk()
+        every { remoteResourceClient.getText(callbackURL) } returns "<html></html>"
 
         service.performCallback()
 
-        verify {
-            Jsoup.connect(withArg {
-                assertTrue(callbackURL == it)
-            })
-        }
+        verify(exactly = 1) { remoteResourceClient.getText(callbackURL) }
     }
 
     @Test
     fun `performCallback with params succeeds`() {
         setupCallbackURL()
         setupCallbackParams()
-
-        every { connectionMock.get() } returns mockk()
+        every { remoteResourceClient.getText("$callbackURL?$callbackParams") } returns "<html></html>"
 
         service.performCallback()
 
-        verify {
-            Jsoup.connect(withArg {
-                assertTrue("$callbackURL?$callbackParams" == it)
-            })
-        }
+        verify(exactly = 1) { remoteResourceClient.getText("$callbackURL?$callbackParams") }
     }
 
     @Test
     fun `performCallback receives exception and handles it correctly`() {
         setupCallbackURL()
-
-        every { connectionMock.get() } throws IOException()
+        every { remoteResourceClient.getText(callbackURL) } throws IOException()
 
         service.performCallback()
 
-        verify {
-            Jsoup.connect(withArg {
-                assertTrue(callbackURL == it)
-            })
-        }
+        verify(exactly = 1) { remoteResourceClient.getText(callbackURL) }
     }
 
     private fun setupCallbackURL() {
-        ReflectionTestUtils.setField(
-            service,
-            "callbackURL",
-            callbackURL
-        )
+        ReflectionTestUtils.setField(service, "callbackURL", callbackURL)
     }
 
     private fun setupCallbackParams() {
-        ReflectionTestUtils.setField(
-            service,
-            "callbackparameter",
-            callbackParams
-        )
-    }
-
-    @AfterEach
-    fun `remove all static mockks`() {
-        unmockkAll()
+        ReflectionTestUtils.setField(service, "callbackparameter", callbackParams)
     }
 }
