@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>4.0.5</version>
+        <version>4.0.8</version>
         <relativePath /> <!-- lookup parent from repository -->
     </parent>
     <groupId>nl.hicts</groupId>
@@ -19,11 +19,13 @@
         </developer>
     </developers>
     <properties>
-        <!-- versions related to Spring boot -->
         <java.version>21</java.version>
         <wiremock-standalone.version>3.13.2</wiremock-standalone.version>
-        <jsoup.version>1.22.1</jsoup.version>
-        <mockk.version>1.14.9</mockk.version>
+        <jsoup.version>1.23.2</jsoup.version>
+        <mockk.version>1.14.11</mockk.version>
+        <jacoco-maven-plugin.version>0.8.15</jacoco-maven-plugin.version>
+        <sonar-maven-plugin.version>5.7.0.6970</sonar-maven-plugin.version>
+        <cyclonedx-maven-plugin.version>2.9.3</cyclonedx-maven-plugin.version>
         <sonar.projectKey>mrhoeve_wrp</sonar.projectKey>
         <sonar.organization>mrhoeve</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
@@ -33,7 +35,7 @@
             **/WebsiteregisterRijksoverheidParserApplication.kt,
             **/ExitProcessService.kt
         </sonar.coverage.exclusions>
-        <maven-release-plugin.version>3.1.1</maven-release-plugin.version>
+        <maven-release-plugin.version>3.3.1</maven-release-plugin.version>
     </properties>
     <dependencyManagement>
        <dependencies>
@@ -158,7 +160,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.14</version>
+                <version>${jacoco-maven-plugin.version}</version>
                 <executions>
                     <execution>
                         <goals>
@@ -177,12 +179,13 @@
             <plugin>
                 <groupId>org.sonarsource.scanner.maven</groupId>
                 <artifactId>sonar-maven-plugin</artifactId>
-                <version>5.2.0.4988</version>
+                <version>${sonar-maven-plugin.version}</version>
             </plugin>
             <!-- create a sbom, see https://www.baeldung.com/spring-boot-actuators -->
             <plugin>
                 <groupId>org.cyclonedx</groupId>
                 <artifactId>cyclonedx-maven-plugin</artifactId>
+                <version>${cyclonedx-maven-plugin.version}</version>
                 <executions>
                     <execution>
                         <phase>generate-resources</phase>

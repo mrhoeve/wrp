@@ -1,7 +1,7 @@
 #
 # Build stage
 #
-FROM maven:3.9.14-amazoncorretto-25 AS build
+FROM maven:3.9.16-amazoncorretto-25 AS build
 COPY src /home/app/src
 COPY pom.xml /home/app
 RUN mvn -f /home/app/pom.xml clean package -DskipTests
@@ -24,4 +24,3 @@ RUN addgroup --gid 1001 -S $SERVICE_NAME && \
 EXPOSE 8080
 USER $SERVICE_NAME
 ENTRYPOINT ["java","-jar", "-XX:+UseSerialGC", "-Xss512k","/app/WebsiteregisterRijksoverheidParser.jar"]
-
