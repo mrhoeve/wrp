@@ -24,6 +24,7 @@ class FileProcessingService(
     /**
      * Reads the [tempFile] and stores the data in the cache
      */
+    @Synchronized
     fun processFile(tempFile: File, documentURL: String) {
         val stopWatch = StopWatch()
         stopWatch.start()

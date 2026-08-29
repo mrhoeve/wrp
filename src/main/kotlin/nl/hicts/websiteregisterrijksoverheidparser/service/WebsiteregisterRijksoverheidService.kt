@@ -20,12 +20,10 @@ class WebsiteregisterRijksoverheidService(
 ) {
     private val logger = LoggerFactory.getLogger(WebsiteregisterRijksoverheidService::class.java)
 
-    /**
-     * Used semi-static variables
-     * these are only changed when a (new) register is discovered
-     */
-    private var tempFile: File? = null
-    private var documentURL: String? = null
+    private val cacheReloadMonitor = Any()
+
+    @Volatile
+    private var activeRegister: ActiveRegister? = null
 
     /**
      * Serves [FileProcessingService.registerMetadata] as JSON from the cache
@@ -41,9 +39,13 @@ class WebsiteregisterRijksoverheidService(
 
     private fun getCachedValue(cacheName: String): String {
         cacheManager.getCache(cacheName)?.get(cacheName, String::class.java)?.let { return it }
-        processFile()
-        return checkNotNull(cacheManager.getCache(cacheName)?.get(cacheName, String::class.java)) {
-            "Cache '$cacheName' was not populated after processing the register"
+
+        return synchronized(cacheReloadMonitor) {
+            cacheManager.getCache(cacheName)?.get(cacheName, String::class.java)?.let { return@synchronized it }
+            processFile()
+            checkNotNull(cacheManager.getCache(cacheName)?.get(cacheName, String::class.java)) {
+                "Cache '$cacheName' was not populated after processing the register"
+            }
         }
     }
 
@@ -83,7 +85,7 @@ class WebsiteregisterRijksoverheidService(
         logger.info("Checking for new register")
         val retrievedDocumentURL = resourceHelperService.determineDocumentURL()
         retrievedDocumentURL?.let { retrieved ->
-            if (retrieved == documentURL) {
+            if (retrieved == activeRegister?.documentURL) {
                 logger.info("No new register found -- keeping current one")
                 return
             }
@@ -93,11 +95,10 @@ class WebsiteregisterRijksoverheidService(
                 downloadedFile = remoteResourceClient.downloadToTemporaryFile(retrieved)
                 fileProcessingService.processFile(downloadedFile, retrieved)
 
-                val previousFile = tempFile
-                tempFile = downloadedFile
-                documentURL = retrieved
+                val previousRegister = activeRegister
+                activeRegister = ActiveRegister(retrieved, downloadedFile)
                 downloadedFile = null
-                deleteTemporaryFile(previousFile)
+                deleteTemporaryFile(previousRegister?.tempFile)
                 callbackService.performCallback()
             } catch (exception: Exception) {
                 deleteTemporaryFile(downloadedFile)
@@ -107,7 +108,8 @@ class WebsiteregisterRijksoverheidService(
     }
 
     private fun processFile() {
-        fileProcessingService.processFile(checkNotNull(tempFile), checkNotNull(documentURL))
+        val register = checkNotNull(activeRegister) { "No register has been loaded" }
+        fileProcessingService.processFile(register.tempFile, register.documentURL)
     }
 
     private fun deleteTemporaryFile(file: File?) {
@@ -116,4 +118,9 @@ class WebsiteregisterRijksoverheidService(
             if (!deleted) logger.warn("Failure to delete file ${it.toPath()}")
         }
     }
+
+    private data class ActiveRegister(
+        val documentURL: String,
+        val tempFile: File,
+    )
 }
