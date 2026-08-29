@@ -10,6 +10,7 @@ import java.net.URI
 @Service
 class ResourceHelperService(
     private val remoteResourceClient: RemoteResourceClient,
+    @param:Value("\${resourceurl:$BASE_RESOURCE_URL}") private val resourceURL: String,
 ) {
     companion object {
         private const val BASE_DOMAIN = "https://www.communicatierijk.nl"
@@ -18,9 +19,6 @@ class ResourceHelperService(
     }
 
     private val logger = LoggerFactory.getLogger(ResourceHelperService::class.java)
-
-    @Value("\${resourceurl:$BASE_RESOURCE_URL}")
-    private lateinit var resourceURL: String
 
     private lateinit var domain: String
 

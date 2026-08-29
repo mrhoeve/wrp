@@ -7,16 +7,14 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.springframework.test.util.ReflectionTestUtils
 import java.io.IOException
 
 class ResourceHelperServiceTest {
     private val remoteResourceClient: RemoteResourceClient = mockk()
-    private val service = ResourceHelperService(remoteResourceClient)
 
     @Test
     fun `domain could not be determined`() {
-        setResourceURL("not a valid URL")
+        val service = ResourceHelperService(remoteResourceClient, "not a valid URL")
 
         val caughtException = assertThrows<UnableToDetermineDomainException> {
             service.determineDomain()
@@ -28,27 +26,31 @@ class ResourceHelperServiceTest {
     @Test
     fun `domain without port could be determined`() {
         val expectedResult = "https://eendomein.local"
-        setResourceURL("$expectedResult/eensubdomein")
+        val resourceURL = "$expectedResult/eensubdomein"
+        val service = ResourceHelperService(remoteResourceClient, resourceURL)
+        every { remoteResourceClient.getText(resourceURL) } returns htmlWithRegisterLink()
 
         service.determineDomain()
 
-        assertEquals(expectedResult, ReflectionTestUtils.getField(service, "domain"))
+        assertEquals("$expectedResult/register.ods", service.determineDocumentURL())
     }
 
     @Test
     fun `domain with port could be determined`() {
         val expectedResult = "https://eendomein.local:443"
-        setResourceURL("$expectedResult/eensubdomein")
+        val resourceURL = "$expectedResult/eensubdomein"
+        val service = ResourceHelperService(remoteResourceClient, resourceURL)
+        every { remoteResourceClient.getText(resourceURL) } returns htmlWithRegisterLink()
 
         service.determineDomain()
 
-        assertEquals(expectedResult, ReflectionTestUtils.getField(service, "domain"))
+        assertEquals("$expectedResult/register.ods", service.determineDocumentURL())
     }
 
     @Test
     fun `determineDocumentURL returns null when retrieving the source page fails`() {
         val resourceURL = "https://eendomein.local:443/eensubdomein"
-        setResourceURL(resourceURL)
+        val service = ResourceHelperService(remoteResourceClient, resourceURL)
         every { remoteResourceClient.getText(resourceURL) } throws IOException()
 
         val result = service.determineDocumentURL()
@@ -56,7 +58,5 @@ class ResourceHelperServiceTest {
         assertEquals(null, result)
     }
 
-    private fun setResourceURL(resourceURL: String) {
-        ReflectionTestUtils.setField(service, "resourceURL", resourceURL)
-    }
+    private fun htmlWithRegisterLink() = """<a href="/register.ods">Register</a>"""
 }

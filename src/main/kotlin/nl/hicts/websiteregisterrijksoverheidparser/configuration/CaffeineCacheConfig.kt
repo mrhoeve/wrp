@@ -10,14 +10,11 @@ import org.springframework.context.annotation.Configuration
 import java.util.concurrent.TimeUnit
 
 @Configuration
-class CaffeineCacheConfig {
+class CaffeineCacheConfig(
+    @param:Value("\${cacheduration:}") private val cacheDuration: String,
+    @param:Value("\${cachetimeunit:}") private val cacheTimeUnit: String,
+) {
     private val logger = LoggerFactory.getLogger(CaffeineCacheConfig::class.java)
-
-    @Value("\${cacheduration:}")
-    private lateinit var cacheDuration: String
-
-    @Value("\${cachetimeunit:}")
-    private lateinit var cacheTimeUnit: String
 
     @Bean
     fun cacheManager(): CacheManager {

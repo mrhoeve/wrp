@@ -51,8 +51,8 @@ class WebsiteregisterRijksoverheidServiceTest {
     private val cacheManager: CacheManager = createCacheManagerForTesting()
 
     private val remoteResourceClient = RemoteResourceClient(RestClient.builder())
-    private val resourceHelperService = ResourceHelperService(remoteResourceClient)
-    private val callbackService = CallbackService(remoteResourceClient)
+    private lateinit var resourceHelperService: ResourceHelperService
+    private lateinit var callbackService: CallbackService
     private val fileProcessingService = FileProcessingService(objectMapper, OdsRegisterParser())
     private val exitProcessServiceMock: ExitProcessService = mockk()
     private val exitProcessServiceCalledExceptionMessage = "thrown from test"
@@ -83,16 +83,7 @@ class WebsiteregisterRijksoverheidServiceTest {
             exitProcessServiceCalledExceptionMessage
         )
 
-        // Setup service and set de cachemanager via reflection
-        service = WebsiteregisterRijksoverheidService(
-            resourceHelperService,
-            callbackService,
-            fileProcessingService,
-            exitProcessServiceMock,
-            remoteResourceClient,
-        )
-        ReflectionTestUtils.setField(service, "cacheManager", cacheManager)
-        ReflectionTestUtils.setField(fileProcessingService, "cacheManager", cacheManager)
+        createService()
 
         createWiremockStubbing()
     }
@@ -119,9 +110,6 @@ class WebsiteregisterRijksoverheidServiceTest {
 
     @Test
     fun `Full test of service including cachemanager`() {
-        setResourceURL()
-        setCallbackURL()
-
         // Let's start
         // First, determine if startup works
         service.initializeServiceAtStartup()
@@ -174,9 +162,6 @@ class WebsiteregisterRijksoverheidServiceTest {
 
     @Test
     fun `Second check for new register receives the same file`() {
-        setResourceURL()
-        setCallbackURL()
-
         // Let's start
         // First, determine if startup works
         service.initializeServiceAtStartup()
@@ -205,9 +190,7 @@ class WebsiteregisterRijksoverheidServiceTest {
 
     @Test
     fun `Test callbackparameter`() {
-        setResourceURL()
-        setCallbackURL()
-        setCallbackparameter()
+        createService("token=xyz")
 
         // Let's start
         // First, determine if startup works
@@ -273,28 +256,25 @@ class WebsiteregisterRijksoverheidServiceTest {
         "Platformgebruik"
     )
 
-    private fun setResourceURL(resourceURL: String? = null) {
-        ReflectionTestUtils.setField(
+    private fun createService(callbackParameter: String = "") {
+        resourceHelperService = ResourceHelperService(
+            remoteResourceClient,
+            "http://$defaultDomain$defaultResourceURL",
+        )
+        callbackService = CallbackService(
+            remoteResourceClient,
+            "http://$defaultDomain/callback",
+            callbackParameter,
+        )
+        service = WebsiteregisterRijksoverheidService(
             resourceHelperService,
-            "resourceURL",
-            resourceURL ?: "http://$defaultDomain$defaultResourceURL"
-        )
-    }
-
-    private fun setCallbackURL() {
-        ReflectionTestUtils.setField(
             callbackService,
-            "callbackURL",
-            "http://$defaultDomain/callback"
+            fileProcessingService,
+            exitProcessServiceMock,
+            remoteResourceClient,
         )
-    }
-
-    private fun setCallbackparameter() {
-        ReflectionTestUtils.setField(
-            callbackService,
-            "callbackparameter",
-            "token=xyz"
-        )
+        ReflectionTestUtils.setField(service, "cacheManager", cacheManager)
+        ReflectionTestUtils.setField(fileProcessingService, "cacheManager", cacheManager)
     }
 
     private fun createWiremockStubbing() {

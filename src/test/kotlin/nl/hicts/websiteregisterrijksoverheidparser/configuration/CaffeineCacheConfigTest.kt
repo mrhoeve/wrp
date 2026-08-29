@@ -9,12 +9,9 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
-import org.springframework.test.util.ReflectionTestUtils
 import java.util.concurrent.TimeUnit
 
 class CaffeineCacheConfigTest {
-    private val caffeineCacheConfig = CaffeineCacheConfig()
-
     private val caffeineBuilderMock = mockk<Caffeine<Any, Any>>()
     private val caffeineCacheMock = mockk<Cache<Any, Any>>()
 
@@ -31,10 +28,7 @@ class CaffeineCacheConfigTest {
 
     @Test
     fun `test default configuration`() {
-        setCacheDuration("")
-        setCacheTimeUnit("")
-
-        caffeineCacheConfig.cacheManager()
+        CaffeineCacheConfig("", "").cacheManager()
 
         // General values
         verify { caffeineBuilderMock.initialCapacity(2500) }
@@ -48,10 +42,7 @@ class CaffeineCacheConfigTest {
     @ParameterizedTest
     @MethodSource("nonDefaultConfigurationTestInput")
     fun `test non default configuration`(duration: Long, timeUnit: TimeUnit) {
-        setCacheDuration(duration.toString())
-        setCacheTimeUnit(timeUnit.toString())
-
-        caffeineCacheConfig.cacheManager()
+        CaffeineCacheConfig(duration.toString(), timeUnit.toString()).cacheManager()
 
         // General values
         verify { caffeineBuilderMock.initialCapacity(2500) }
@@ -60,14 +51,6 @@ class CaffeineCacheConfigTest {
 
         // Default time values
         verify { caffeineBuilderMock.expireAfterAccess(duration, timeUnit) }
-    }
-
-    private fun setCacheDuration(value: String) {
-        ReflectionTestUtils.setField(caffeineCacheConfig, "cacheDuration", value)
-    }
-
-    private fun setCacheTimeUnit(value: String) {
-        ReflectionTestUtils.setField(caffeineCacheConfig, "cacheTimeUnit", value)
     }
 
     @AfterEach
