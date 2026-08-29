@@ -25,45 +25,36 @@ class FileProcessingService(
      * Reads the [tempFile] and stores the data in the cache
      */
     fun processFile(tempFile: File, documentURL: String) {
-        try {
-            val stopWatch = StopWatch()
-            stopWatch.start()
-            val parsedRegister = odsRegisterParser.parse(tempFile)
+        val stopWatch = StopWatch()
+        stopWatch.start()
+        val parsedRegister = odsRegisterParser.parse(tempFile)
+        val metadata = registerMetadata
+            ?.takeIf { it.documentURL == documentURL }
+            ?: RegisterMetadata(
+                documentURL,
+                ZonedDateTime.now(ZoneId.of("UTC")),
+                parsedRegister.records.size,
+                parsedRegister.columnHeaders,
+            )
 
-            if (registerMetadata == null) {
-                createRegisterMetadata(documentURL, parsedRegister.records.size, parsedRegister.columnHeaders)
-            }
+        cacheData(metadata, parsedRegister.records)
+        registerMetadata = metadata
 
-            cacheData(parsedRegister.records)
-
-            stopWatch.stop()
-            logger.info("Found ${registerMetadata?.registersFound} registerdata, parsed in ${stopWatch.totalTimeSeconds.roundToInt()} seconds")
-
-        } catch (t: Throwable) {
-            logger.error("Unexpected error occurred.", t)
-        }
-    }
-
-    /**
-     * creates the RegisterMetadata object, storing general information
-     */
-    private fun createRegisterMetadata(documentURL: String, registersFound: Int, columnHeaders: List<String>) {
-        registerMetadata = RegisterMetadata(
-            documentURL,
-            ZonedDateTime.now(ZoneId.of("UTC")),
-            registersFound,
-            columnHeaders
-        )
+        stopWatch.stop()
+        logger.info("Found ${metadata.registersFound} registerdata, parsed in ${stopWatch.totalTimeSeconds.roundToInt()} seconds")
     }
 
     /**
      * Stores the RegisterMetadata and data in their respective cache
      */
-    private fun cacheData(data: List<Map<String, String>>) {
+    private fun cacheData(metadata: RegisterMetadata, data: List<Map<String, String>>) {
+        val serializedMetadata = objectMapper.writeValueAsString(metadata)
+        val serializedData = objectMapper.writeValueAsString(data)
+
         cacheManager.getCache(RegisterCache.METADATA)
-            ?.put(RegisterCache.METADATA, objectMapper.writeValueAsString(registerMetadata))
+            ?.put(RegisterCache.METADATA, serializedMetadata)
         cacheManager.getCache(RegisterCache.DATA)
-            ?.put(RegisterCache.DATA, objectMapper.writeValueAsString(data))
+            ?.put(RegisterCache.DATA, serializedData)
     }
 
     /**

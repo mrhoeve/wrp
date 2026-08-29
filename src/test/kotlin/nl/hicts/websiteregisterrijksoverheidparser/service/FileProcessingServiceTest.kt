@@ -6,6 +6,7 @@ import io.mockk.unmockkAll
 import io.mockk.verify
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.springframework.cache.Cache
 import org.springframework.cache.CacheManager
 
@@ -21,7 +22,9 @@ class FileProcessingServiceTest {
     fun `Loading of document fails`() {
         every { parser.parse(any()) } throws Exception()
 
-        service.processFile(mockk(), "mockk")
+        assertThrows<Exception> {
+            service.processFile(mockk(), "mockk")
+        }
 
         io.mockk.verify(exactly = 1) { parser.parse(any()) }
     }

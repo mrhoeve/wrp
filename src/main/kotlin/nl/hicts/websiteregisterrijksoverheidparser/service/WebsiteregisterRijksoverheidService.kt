@@ -78,6 +78,7 @@ class WebsiteregisterRijksoverheidService(
      * When [CallbackService.callbackURL] is not null or blank, a callback is executed after loading the new register
      */
     @Scheduled(cron = "@hourly")
+    @Synchronized
     fun checkForNewRegister() {
         logger.info("Checking for new register")
         val retrievedDocumentURL = resourceHelperService.determineDocumentURL()
@@ -87,19 +88,20 @@ class WebsiteregisterRijksoverheidService(
                 return
             }
             logger.info("Register found at URL $retrieved")
+            var downloadedFile: File? = null
             try {
-                tempFile?.let { file ->
-                    val deleted = file.delete()
-                    if (!deleted) logger.warn("Failure to delete file ${file.toPath()}")
-                }
-                tempFile = null
+                downloadedFile = remoteResourceClient.downloadToTemporaryFile(retrieved)
+                fileProcessingService.processFile(downloadedFile, retrieved)
+
+                val previousFile = tempFile
+                tempFile = downloadedFile
                 documentURL = retrieved
-                downloadFileToTemp(retrieved)
-                fileProcessingService.clearCachedDataAndInvalidateCache()
-                processFile()
+                downloadedFile = null
+                deleteTemporaryFile(previousFile)
                 callbackService.performCallback()
-            } catch (t: Throwable) {
-                logger.error("Unexpected error occurred.", t)
+            } catch (exception: Exception) {
+                deleteTemporaryFile(downloadedFile)
+                logger.error("Unable to load register from $retrieved; keeping the current register.", exception)
             }
         }
     }
@@ -108,10 +110,10 @@ class WebsiteregisterRijksoverheidService(
         fileProcessingService.processFile(checkNotNull(tempFile), checkNotNull(documentURL))
     }
 
-    /**
-     * Downloads the given file at [givenDocumentURL] to a temporary file.
-     */
-    private fun downloadFileToTemp(givenDocumentURL: String) {
-        tempFile = remoteResourceClient.downloadToTemporaryFile(givenDocumentURL)
+    private fun deleteTemporaryFile(file: File?) {
+        file?.let {
+            val deleted = it.delete()
+            if (!deleted) logger.warn("Failure to delete file ${it.toPath()}")
+        }
     }
 }
