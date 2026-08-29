@@ -51,7 +51,7 @@ class WebsiteregisterRijksoverheidServiceTest {
 
     private val resourceHelperService = ResourceHelperService()
     private val callbackService = CallbackService()
-    private val fileProcessingService = FileProcessingService(objectMapper)
+    private val fileProcessingService = FileProcessingService(objectMapper, OdsRegisterParser())
     private val exitProcessServiceMock: ExitProcessService = mockk()
     private val exitProcessServiceCalledExceptionMessage = "thrown from test"
 
@@ -228,14 +228,14 @@ class WebsiteregisterRijksoverheidServiceTest {
         createBinaryLink(REGISTER_1_SITE)
 
     private fun dataFromOneSite(): String = """
-        [{"URL":"http://www.rijksoverheid.nl","Organisatietype":"Rijksoverheid","Organisatie":"AZ","Suborganisatie":"DPC","Afdeling":"Online Advies","Bezoeken/mnd":"23.245.794","Voldoet":"ja","Totaal":"ja","IPv6":"ja","DNSSEC":"ja","HTTPS":"ja","CSP":"waarschuwing","RefPol.":"ja","X-Cont.":"ja","X-Frame.":"ja","Testdatum":"14-07-2022","STARTTLS en DANE":"","DMARC":"ja","DKIM":"","SPF":"ja","Platformgebruik":"Platform Rijksoverheid Online (AZ)"}]
+        [{"URL":"http://www.rijksoverheid.nl","Organisatietype":"Rijksoverheid","Organisatie":"AZ","Suborganisatie":"DPC","Afdeling":"Online Advies","Bezoeken/mnd":"23.245.794","Voldoet":"ja","Websitetest Totaal":"ja","Websitetest IPv6":"ja","Websitetest DNSSEC":"ja","HTTPS":"ja","CSP":"waarschuwing","RefPol.":"ja","X-Cont.":"ja","X-Frame.":"ja","Websitetest Testdatum":"21-06-2022","E-mailtest Totaal":"ja","E-mailtest IPv6":"ja","E-mailtest DNSSEC":"ja","STARTTLS en DANE":"","DMARC":"ja","DKIM":"","SPF":"ja","E-mailtest Testdatum":"14-07-2022","Platformgebruik":"Platform Rijksoverheid Online (AZ)"}]
     """.trimIndent()
 
     private fun binaryLinkWithTwoSites(): String =
         createBinaryLink(REGISTER_2_SITES)
 
     private fun dataFromTwoSites(): String = """
-        [{"URL":"http://www.rijksoverheid.nl","Organisatietype":"Rijksoverheid","Organisatie":"AZ","Suborganisatie":"DPC","Afdeling":"Online Advies","Bezoeken/mnd":"23.245.794","Voldoet":"ja","Totaal":"ja","IPv6":"ja","DNSSEC":"ja","HTTPS":"ja","CSP":"waarschuwing","RefPol.":"ja","X-Cont.":"ja","X-Frame.":"ja","Testdatum":"14-07-2022","STARTTLS en DANE":"","DMARC":"ja","DKIM":"","SPF":"ja","Platformgebruik":"Platform Rijksoverheid Online (AZ)"},{"URL":"http://www.nederlandwereldwijd.nl","Organisatietype":"Rijksoverheid","Organisatie":"BUZA","Suborganisatie":"","Afdeling":"","Bezoeken/mnd":"6.520.737","Voldoet":"ja","Totaal":"nee","IPv6":"ja","DNSSEC":"ja","HTTPS":"ja","CSP":"ja","RefPol.":"ja","X-Cont.":"ja","X-Frame.":"ja","Testdatum":"14-07-2022","STARTTLS en DANE":"","DMARC":"ja","DKIM":"nee","SPF":"nee","Platformgebruik":"Platform Rijksoverheid Online (AZ)"}]
+        [{"URL":"http://www.rijksoverheid.nl","Organisatietype":"Rijksoverheid","Organisatie":"AZ","Suborganisatie":"DPC","Afdeling":"Online Advies","Bezoeken/mnd":"23.245.794","Voldoet":"ja","Websitetest Totaal":"ja","Websitetest IPv6":"ja","Websitetest DNSSEC":"ja","HTTPS":"ja","CSP":"waarschuwing","RefPol.":"ja","X-Cont.":"ja","X-Frame.":"ja","Websitetest Testdatum":"21-06-2022","E-mailtest Totaal":"ja","E-mailtest IPv6":"ja","E-mailtest DNSSEC":"ja","STARTTLS en DANE":"","DMARC":"ja","DKIM":"","SPF":"ja","E-mailtest Testdatum":"14-07-2022","Platformgebruik":"Platform Rijksoverheid Online (AZ)"},{"URL":"http://www.nederlandwereldwijd.nl","Organisatietype":"Rijksoverheid","Organisatie":"BUZA","Suborganisatie":"","Afdeling":"","Bezoeken/mnd":"6.520.737","Voldoet":"ja","Websitetest Totaal":"ja","Websitetest IPv6":"ja","Websitetest DNSSEC":"ja","HTTPS":"ja","CSP":"ja","RefPol.":"ja","X-Cont.":"ja","X-Frame.":"ja","Websitetest Testdatum":"21-06-2022","E-mailtest Totaal":"nee","E-mailtest IPv6":"ja","E-mailtest DNSSEC":"ja","STARTTLS en DANE":"","DMARC":"ja","DKIM":"nee","SPF":"nee","E-mailtest Testdatum":"14-07-2022","Platformgebruik":"Platform Rijksoverheid Online (AZ)"}]
     """.trimIndent()
 
     private fun createBinaryLink(linkToFile: String): String =
@@ -249,23 +249,23 @@ class WebsiteregisterRijksoverheidServiceTest {
         "Afdeling",
         "Bezoeken/mnd",
         "Voldoet",
-        "Totaal",
-        "IPv6",
-        "DNSSEC",
+        "Websitetest Totaal",
+        "Websitetest IPv6",
+        "Websitetest DNSSEC",
         "HTTPS",
         "CSP",
         "RefPol.",
         "X-Cont.",
         "X-Frame.",
-        "Testdatum",
-        "Totaal",
-        "IPv6",
-        "DNSSEC",
+        "Websitetest Testdatum",
+        "E-mailtest Totaal",
+        "E-mailtest IPv6",
+        "E-mailtest DNSSEC",
         "STARTTLS en DANE",
         "DMARC",
         "DKIM",
         "SPF",
-        "Testdatum",
+        "E-mailtest Testdatum",
         "Platformgebruik"
     )
 

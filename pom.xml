@@ -21,7 +21,6 @@
     <properties>
         <!-- versions related to Spring boot -->
         <java.version>21</java.version>
-        <odfdom.version>0.13.0</odfdom.version>
         <wiremock-standalone.version>3.13.2</wiremock-standalone.version>
         <jsoup.version>1.22.1</jsoup.version>
         <mockk.version>1.14.9</mockk.version>
@@ -38,11 +37,6 @@
     </properties>
     <dependencyManagement>
        <dependencies>
-           <dependency>
-               <groupId>org.odftoolkit</groupId>
-               <artifactId>odfdom-java</artifactId>
-               <version>${odfdom.version}</version>
-           </dependency>
            <dependency>
                <groupId>org.jsoup</groupId>
                <artifactId>jsoup</artifactId>
@@ -98,10 +92,6 @@
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-stdlib-jdk8</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.odftoolkit</groupId>
-            <artifactId>odfdom-java</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jsoup</groupId>
