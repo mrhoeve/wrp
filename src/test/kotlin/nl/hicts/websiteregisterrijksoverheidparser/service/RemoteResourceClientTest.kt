@@ -12,7 +12,9 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.springframework.web.client.ResourceAccessException
 import org.springframework.web.client.RestClient
+import java.time.Duration
 
 @WireMockTest
 class RemoteResourceClientTest {
@@ -56,5 +58,38 @@ class RemoteResourceClientTest {
         val response = client.getText("${wireMock.httpBaseUrl}/redirect")
 
         assertEquals("redirected response", response)
+    }
+
+    @Test
+    fun `getText stops waiting after the configured read timeout`(wireMock: WireMockRuntimeInfo) {
+        stubFor(get("/slow").willReturn(ok("too late").withFixedDelay(500)))
+        val timeoutClient = RemoteResourceClient(
+            RestClient.builder(),
+            connectTimeout = Duration.ofSeconds(1),
+            readTimeout = Duration.ofMillis(100),
+        )
+
+        assertThrows<ResourceAccessException> {
+            timeoutClient.getText("${wireMock.httpBaseUrl}/slow")
+        }
+    }
+
+    @Test
+    fun `timeouts must be greater than zero`() {
+        assertThrows<IllegalArgumentException> {
+            RemoteResourceClient(
+                RestClient.builder(),
+                connectTimeout = Duration.ZERO,
+                readTimeout = Duration.ofSeconds(1),
+            )
+        }
+
+        assertThrows<IllegalArgumentException> {
+            RemoteResourceClient(
+                RestClient.builder(),
+                connectTimeout = Duration.ofSeconds(1),
+                readTimeout = Duration.ofSeconds(-1),
+            )
+        }
     }
 }
