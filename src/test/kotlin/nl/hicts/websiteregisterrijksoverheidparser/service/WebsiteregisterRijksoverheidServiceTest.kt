@@ -351,7 +351,7 @@ class WebsiteregisterRijksoverheidServiceTest {
             deserializationContext: DeserializationContext?
         ): ZonedDateTime {
             val localDate: LocalDateTime = LocalDateTime.parse(
-                jsonParser.text,
+                jsonParser.string,
                 DateTimeFormatter.ISO_DATE_TIME
             )
             return localDate.atZone(ZoneOffset.UTC)
