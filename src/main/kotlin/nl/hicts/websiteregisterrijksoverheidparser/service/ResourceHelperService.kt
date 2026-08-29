@@ -20,20 +20,16 @@ class ResourceHelperService(
 
     private val logger = LoggerFactory.getLogger(ResourceHelperService::class.java)
 
-    private lateinit var domain: String
+    private lateinit var resourceURI: URI
 
     /**
-     * Determines the base domain URL to use
+     * Validates and stores the configured resource URI.
      */
     @Throws(UnableToDetermineDomainException::class)
     fun determineDomain() {
         try {
-            val url = URI.create(resourceURL).toURL()
-            domain = if (url.port != -1) {
-                url.protocol.plus("://").plus(url.host).plus(":").plus(url.port)
-            } else {
-                url.protocol.plus("://").plus(url.host)
-            }
+            resourceURI = URI.create(resourceURL)
+            resourceURI.toURL()
         } catch (_: Throwable) {
             throw UnableToDetermineDomainException("Unable to parse resourceURL '${resourceURL}', could not determine domain.")
         }
@@ -41,8 +37,7 @@ class ResourceHelperService(
 
     /**
      * Loads the [resourceURL] and searches for a tag containing '.ods' in the href attribute.
-     * When found, it retrieves the given href thus resulting in a relative path to the register.
-     * This path gets prefixed with the domain, resulting in an absolute path.
+     * Relative, root-relative, protocol-relative and absolute links are resolved against [resourceURL].
      */
     fun determineDocumentURL(): String? {
         var linkToDocument: String? = null
@@ -57,10 +52,12 @@ class ResourceHelperService(
             logger.error("Could not determine link to the registerdocument")
             return null
         }
-        if (linkToDocument.startsWith("http", true)) {
-            return linkToDocument
+        return try {
+            resourceURI.resolve(linkToDocument).toString()
+        } catch (t: Throwable) {
+            logger.error("Unable to resolve registerdocument link '$linkToDocument'", t)
+            null
         }
-        return domain.plus(linkToDocument)
     }
 
 }
