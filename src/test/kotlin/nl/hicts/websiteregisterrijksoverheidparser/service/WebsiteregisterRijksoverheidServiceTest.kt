@@ -23,7 +23,6 @@ import org.junit.jupiter.api.assertThrows
 import org.skyscreamer.jsonassert.JSONAssert
 import org.springframework.cache.CacheManager
 import org.springframework.cache.caffeine.CaffeineCacheManager
-import org.springframework.test.util.ReflectionTestUtils
 import org.springframework.web.client.RestClient
 import tools.jackson.databind.ValueDeserializer
 import tools.jackson.databind.cfg.DateTimeFeature
@@ -53,7 +52,7 @@ class WebsiteregisterRijksoverheidServiceTest {
     private val remoteResourceClient = RemoteResourceClient(RestClient.builder())
     private lateinit var resourceHelperService: ResourceHelperService
     private lateinit var callbackService: CallbackService
-    private val fileProcessingService = FileProcessingService(objectMapper, OdsRegisterParser())
+    private val fileProcessingService = FileProcessingService(objectMapper, OdsRegisterParser(), cacheManager)
     private val exitProcessServiceMock: ExitProcessService = mockk()
     private val exitProcessServiceCalledExceptionMessage = "thrown from test"
 
@@ -97,6 +96,7 @@ class WebsiteregisterRijksoverheidServiceTest {
             fileProcessingService,
             exitProcessServiceMock,
             remoteResourceClient,
+            cacheManager,
         )
         every { resourceHelperServiceMock.determineDomain() } throws UnableToDetermineDomainException()
 
@@ -272,9 +272,8 @@ class WebsiteregisterRijksoverheidServiceTest {
             fileProcessingService,
             exitProcessServiceMock,
             remoteResourceClient,
+            cacheManager,
         )
-        ReflectionTestUtils.setField(service, "cacheManager", cacheManager)
-        ReflectionTestUtils.setField(fileProcessingService, "cacheManager", cacheManager)
     }
 
     private fun createWiremockStubbing() {
@@ -334,17 +333,14 @@ class WebsiteregisterRijksoverheidServiceTest {
 
     // Create a specialized cachemanager for testing
     private fun createCacheManagerForTesting(): CacheManager {
-        val cacheManager = CaffeineCacheManager("data", "metadata")
+        val cacheManager = CaffeineCacheManager(RegisterCache.DATA, RegisterCache.METADATA)
         cacheManager.setCaffeine(caffeineCacheBuilder())
         return cacheManager
     }
 
     private fun caffeineCacheBuilder(): Caffeine<Any, Any> {
         return Caffeine.newBuilder()
-            .initialCapacity(2500)
-            .maximumSize(3000)
             .expireAfterAccess(CACHEMANAGER_TIMEOUT, CACHEMANAGER_TIMEOUT_TIMEUNIT)
-            .weakKeys()
     }
 
     // Class used for deserialization of ZonedDateTime

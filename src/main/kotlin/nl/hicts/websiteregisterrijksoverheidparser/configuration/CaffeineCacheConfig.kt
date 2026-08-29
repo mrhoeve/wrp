@@ -1,6 +1,7 @@
 package nl.hicts.websiteregisterrijksoverheidparser.configuration
 
 import com.github.benmanes.caffeine.cache.Caffeine
+import nl.hicts.websiteregisterrijksoverheidparser.service.RegisterCache
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.cache.CacheManager
@@ -18,18 +19,17 @@ class CaffeineCacheConfig(
 
     @Bean
     fun cacheManager(): CacheManager {
-        val cacheManager = CaffeineCacheManager("data", "metadata")
+        val cacheManager = CaffeineCacheManager(RegisterCache.DATA, RegisterCache.METADATA)
         cacheManager.setCaffeine(caffeineCacheBuilder())
         return cacheManager
     }
 
     private fun caffeineCacheBuilder(): Caffeine<Any, Any> {
-        logger.info("Configure cache to ${determineCacheDuration()} ${determineCacheTimeUnit()}")
+        val duration = determineCacheDuration()
+        val timeUnit = determineCacheTimeUnit()
+        logger.info("Configure cache to $duration $timeUnit")
         return Caffeine.newBuilder()
-            .initialCapacity(2500)
-            .maximumSize(3000)
-            .expireAfterAccess(determineCacheDuration(), determineCacheTimeUnit())
-            .weakKeys()
+            .expireAfterAccess(duration, timeUnit)
     }
 
     private fun determineCacheDuration(): Long {

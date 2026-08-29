@@ -19,10 +19,7 @@ class CaffeineCacheConfigTest {
     fun setUp() {
         mockkStatic(Caffeine::class)
         every { Caffeine.newBuilder() } returns caffeineBuilderMock
-        every { caffeineBuilderMock.initialCapacity(any()) } returns caffeineBuilderMock
-        every { caffeineBuilderMock.maximumSize(any()) } returns caffeineBuilderMock
         every { caffeineBuilderMock.expireAfterAccess(any(), any()) } returns caffeineBuilderMock
-        every { caffeineBuilderMock.weakKeys() } returns caffeineBuilderMock
         every { caffeineBuilderMock.build<Any, Any>() } returns caffeineCacheMock
     }
 
@@ -30,12 +27,6 @@ class CaffeineCacheConfigTest {
     fun `test default configuration`() {
         CaffeineCacheConfig("", "").cacheManager()
 
-        // General values
-        verify { caffeineBuilderMock.initialCapacity(2500) }
-        verify { caffeineBuilderMock.maximumSize(3000) }
-        verify { caffeineBuilderMock.weakKeys() }
-
-        // Default time values
         verify { caffeineBuilderMock.expireAfterAccess(15L, TimeUnit.MINUTES) }
     }
 
@@ -44,12 +35,6 @@ class CaffeineCacheConfigTest {
     fun `test non default configuration`(duration: Long, timeUnit: TimeUnit) {
         CaffeineCacheConfig(duration.toString(), timeUnit.toString()).cacheManager()
 
-        // General values
-        verify { caffeineBuilderMock.initialCapacity(2500) }
-        verify { caffeineBuilderMock.maximumSize(3000) }
-        verify { caffeineBuilderMock.weakKeys() }
-
-        // Default time values
         verify { caffeineBuilderMock.expireAfterAccess(duration, timeUnit) }
     }
 

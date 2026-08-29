@@ -1,12 +1,8 @@
 package nl.hicts.websiteregisterrijksoverheidparser.service
 
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.cache.CacheManager
-import org.springframework.cache.annotation.CacheConfig
-import org.springframework.cache.annotation.Cacheable
-import org.springframework.cache.caffeine.CaffeineCache
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
@@ -14,17 +10,14 @@ import java.io.File
 
 
 @Service
-@CacheConfig(cacheNames = ["data", "metadata"])
 class WebsiteregisterRijksoverheidService(
     val resourceHelperService: ResourceHelperService,
     val callbackService: CallbackService,
     val fileProcessingService: FileProcessingService,
     val exitProcessService: ExitProcessService,
     private val remoteResourceClient: RemoteResourceClient,
+    private val cacheManager: CacheManager,
 ) {
-
-    @Autowired
-    private lateinit var cacheManager: CacheManager
     private val logger = LoggerFactory.getLogger(WebsiteregisterRijksoverheidService::class.java)
 
     /**
@@ -38,25 +31,20 @@ class WebsiteregisterRijksoverheidService(
      * Serves [FileProcessingService.registerMetadata] as JSON from the cache
      * When the cache doesn't contain the metadata-key, all data is reloaded into the cache
      */
-    @Cacheable(cacheNames = ["metadata"])
-    fun getMetadata(): String {
-        if ((cacheManager.getCache("metadata") as CaffeineCache).nativeCache.asMap().values.firstOrNull() == null) {
-            processFile()
-        }
-        return (cacheManager.getCache("metadata") as CaffeineCache).nativeCache.asMap().values.first() as String
-    }
+    fun getMetadata(): String = getCachedValue(RegisterCache.METADATA)
 
     /**
-     * Serves [FileProcessingService.data] as JSON from the cache
+     * Serves the parsed register data as JSON from the cache
      * When the cache doesn't contain the data-key, all data is reloaded into the cache
      */
-    @Cacheable(cacheNames = ["data"])
-    fun getRegisterData(): String {
-        if ((cacheManager.getCache("data") as CaffeineCache).nativeCache.asMap().values.firstOrNull() == null) {
-            processFile()
+    fun getRegisterData(): String = getCachedValue(RegisterCache.DATA)
+
+    private fun getCachedValue(cacheName: String): String {
+        cacheManager.getCache(cacheName)?.get(cacheName, String::class.java)?.let { return it }
+        processFile()
+        return checkNotNull(cacheManager.getCache(cacheName)?.get(cacheName, String::class.java)) {
+            "Cache '$cacheName' was not populated after processing the register"
         }
-        val result = (cacheManager.getCache("data") as CaffeineCache).nativeCache.asMap().values.first() as String
-        return result
     }
 
     /**

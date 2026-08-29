@@ -3,10 +3,7 @@ package nl.hicts.websiteregisterrijksoverheidparser.service
 import tools.jackson.databind.ObjectMapper
 import nl.hicts.websiteregisterrijksoverheidparser.model.RegisterMetadata
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.cache.CacheManager
-import org.springframework.cache.annotation.CacheConfig
-import org.springframework.cache.annotation.CacheEvict
 import org.springframework.stereotype.Service
 import org.springframework.util.StopWatch
 import java.io.File
@@ -15,13 +12,11 @@ import java.time.ZonedDateTime
 import kotlin.math.roundToInt
 
 @Service
-@CacheConfig(cacheNames = ["data", "metadata"])
 class FileProcessingService(
     private val objectMapper: ObjectMapper,
-    private val odsRegisterParser: OdsRegisterParser
+    private val odsRegisterParser: OdsRegisterParser,
+    private val cacheManager: CacheManager,
 ) {
-    @Autowired
-    private lateinit var cacheManager: CacheManager
     private val logger = LoggerFactory.getLogger(FileProcessingService::class.java)
 
     private var registerMetadata: RegisterMetadata? = null
@@ -65,16 +60,19 @@ class FileProcessingService(
      * Stores the RegisterMetadata and data in their respective cache
      */
     private fun cacheData(data: List<Map<String, String>>) {
-        cacheManager.getCache("metadata")?.put("metadata", objectMapper.writeValueAsString(registerMetadata))
-        cacheManager.getCache("data")?.put("data", objectMapper.writeValueAsString(data))
+        cacheManager.getCache(RegisterCache.METADATA)
+            ?.put(RegisterCache.METADATA, objectMapper.writeValueAsString(registerMetadata))
+        cacheManager.getCache(RegisterCache.DATA)
+            ?.put(RegisterCache.DATA, objectMapper.writeValueAsString(data))
     }
 
     /**
      * Clears all cached data and deletes the registerMetadata.
      */
-    @CacheEvict(value = ["data", "metadata"], allEntries = true)
     fun clearCachedDataAndInvalidateCache() {
         registerMetadata = null
+        cacheManager.getCache(RegisterCache.DATA)?.clear()
+        cacheManager.getCache(RegisterCache.METADATA)?.clear()
     }
 
 }
