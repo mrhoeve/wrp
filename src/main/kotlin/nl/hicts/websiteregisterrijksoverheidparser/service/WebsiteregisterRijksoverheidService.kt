@@ -1,5 +1,6 @@
 package nl.hicts.websiteregisterrijksoverheidparser.service
 
+import jakarta.annotation.PreDestroy
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.cache.CacheManager
@@ -112,10 +113,23 @@ class WebsiteregisterRijksoverheidService(
         fileProcessingService.processFile(register.tempFile, register.documentURL)
     }
 
+    @PreDestroy
+    @Synchronized
+    fun cleanupTemporaryFile() {
+        synchronized(cacheReloadMonitor) {
+            val register = activeRegister
+            activeRegister = null
+            deleteTemporaryFile(register?.tempFile)
+        }
+    }
+
     private fun deleteTemporaryFile(file: File?) {
         file?.let {
             val deleted = it.delete()
-            if (!deleted) logger.warn("Failure to delete file ${it.toPath()}")
+            if (!deleted) {
+                logger.warn("Failure to delete file ${it.toPath()}; scheduling deletion on JVM exit")
+                it.deleteOnExit()
+            }
         }
     }
 
