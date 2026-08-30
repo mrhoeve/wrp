@@ -12,6 +12,8 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.skyscreamer.jsonassert.JSONAssert
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.info.BuildProperties
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT
 import org.springframework.boot.test.web.server.LocalServerPort
@@ -33,7 +35,9 @@ import org.springframework.web.client.RestClient
         "versioncheckenabled=false",
     ],
 )
-class ApplicationContextIntegrationTest {
+class ApplicationContextIntegrationTest @Autowired constructor(
+    private val buildProperties: BuildProperties,
+) {
     @LocalServerPort
     private var port: Int = 0
 
@@ -57,7 +61,7 @@ class ApplicationContextIntegrationTest {
         assertEquals("UP", health)
         JSONAssert.assertEquals("""{"status":"UP"}""", actuatorHealth, false)
         JSONAssert.assertEquals(
-            """{"version":"1.8","latestVersion":null,"updateAvailable":null,"checkedAt":null}""",
+            """{"version":"${buildProperties.version}","latestVersion":null,"updateAvailable":null,"checkedAt":null}""",
             version,
             true,
         )
