@@ -14,7 +14,8 @@ WORKDIR /app
 
 COPY --from=build /workspace/target/WebsiteregisterRijksoverheidParser-*.jar /app/wrp.jar
 
-RUN addgroup --gid 1001 -S "$SERVICE_NAME" \
+RUN apk upgrade --no-cache libcrypto3 libssl3 openssl \
+    && addgroup --gid 1001 -S "$SERVICE_NAME" \
     && adduser --uid 1001 -S -D -H -G "$SERVICE_NAME" "$SERVICE_NAME" \
     && chown -R "$SERVICE_NAME:$SERVICE_NAME" /app
 
