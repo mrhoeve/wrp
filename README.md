@@ -184,6 +184,41 @@ WRP targets Java 21. Use the Maven wrapper to run the complete build:
 
 The build runs unit, parser, HTTP, concurrency, REST-contract, and full Spring application tests. It also generates the CycloneDX SBOM and enforces at least 90% line coverage and 70% branch coverage.
 
+## Release process
+
+Development continues on feature branches and is merged into `main` only when the complete change is ready for release. The `Release` GitHub Actions workflow is then started manually from `main`; it cannot publish from another branch and requires an explicit confirmation.
+
+The POM is the version source of truth. Its normal development version uses strict `major.minor.patch-SNAPSHOT` notation. For example, `2.0.0-SNAPSHOT` is released as `2.0.0`. After a successful release, the workflow always increments the minor component and resets the patch component, resulting in `2.1.0-SNAPSHOT`. There is deliberately no override for this next development version.
+
+An optional release-version override is available for exceptional transitions. The first modernized release uses override `2.0.0` because the historical POM still contains `1.8`. Overrides must also use strict `major.minor.patch` notation.
+
+Before it changes the remote repository, the workflow:
+
+1. validates the selected branch, confirmation, version, credentials, and absence of an existing tag;
+2. runs the release-version tests and complete Maven verification;
+3. produces the application JAR, CycloneDX SBOM, and SHA-256 checksums;
+4. builds the container and rejects high or critical known vulnerabilities;
+5. publishes the verified container with SBOM and maximum provenance information.
+
+It then atomically pushes the release tag and the two generated commits to `main`: one commit containing the stable release version and one containing the next snapshot version. Finally, it publishes a GitHub release with generated notes and the release assets. Version-specific introductory notes can be placed in `docs/releases/<version>.md`.
+
+The container is published as `mrhoeve/wrp` with the exact, major/minor, major, and `latest` tags. Release `2.3.4`, for example, updates `2.3.4`, `2.3`, `2`, and `latest`.
+
+### One-time GitHub configuration
+
+Configure the following under the repository's Actions settings before the first release:
+
+- repository variable `DOCKERHUB_USERNAME`, containing the Docker Hub account name;
+- repository secret `DOCKERHUB_TOKEN`, containing a Docker Hub access token with read/write permission for `mrhoeve/wrp`;
+- workflow permissions that allow GitHub Actions to write repository contents, tags, and releases;
+- if `main` is protected, permission for this release workflow to push its generated release and next-version commits.
+
+The workflow uses a GitHub environment named `release`. Adding a required reviewer to that environment is recommended when an additional approval gate is desired. No separate GitHub token secret is needed; the workflow uses the automatically scoped `GITHUB_TOKEN`.
+
+To publish the first major release, open **Actions → Release → Run workflow**, select `main`, enter `2.0.0` as the release-version override, select the confirmation, and start the workflow. For later releases, leave the override empty.
+
+If the workflow stops before the atomic Git push, fix the reported cause and run it again; existing Docker tags for that same version may safely be replaced by the verified rebuild. If the atomic push succeeded but creating the GitHub release failed, create the release from the already pushed tag and attach the files retained by the failed workflow run rather than starting a new version.
+
 ## License
 
 See [LICENSE.md](LICENSE.md).
