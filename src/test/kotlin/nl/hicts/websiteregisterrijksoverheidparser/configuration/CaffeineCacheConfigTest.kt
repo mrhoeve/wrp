@@ -19,6 +19,7 @@ class CaffeineCacheConfigTest {
     fun setUp() {
         mockkStatic(Caffeine::class)
         every { Caffeine.newBuilder() } returns caffeineBuilderMock
+        every { caffeineBuilderMock.recordStats() } returns caffeineBuilderMock
         every { caffeineBuilderMock.expireAfterAccess(any(), any()) } returns caffeineBuilderMock
         every { caffeineBuilderMock.build<Any, Any>() } returns caffeineCacheMock
     }

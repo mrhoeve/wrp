@@ -12,10 +12,9 @@ import java.io.File
 
 @Service
 class WebsiteregisterRijksoverheidService(
-    val resourceHelperService: ResourceHelperService,
-    val callbackService: CallbackService,
-    val fileProcessingService: FileProcessingService,
-    val exitProcessService: ExitProcessService,
+    private val resourceHelperService: ResourceHelperService,
+    private val callbackService: CallbackService,
+    private val fileProcessingService: FileProcessingService,
     private val remoteResourceClient: RemoteResourceClient,
     private val cacheManager: CacheManager,
 ) {
@@ -27,7 +26,7 @@ class WebsiteregisterRijksoverheidService(
     private var activeRegister: ActiveRegister? = null
 
     /**
-     * Serves [FileProcessingService.registerMetadata] as JSON from the cache
+     * Serves the register metadata as JSON from the cache.
      * When the cache doesn't contain the metadata-key, all data is reloaded into the cache
      */
     fun getMetadata(): String = getCachedValue(RegisterCache.METADATA)
@@ -55,21 +54,8 @@ class WebsiteregisterRijksoverheidService(
      */
     @EventListener(ApplicationReadyEvent::class)
     fun initializeServiceAtStartup() {
-        determineDomain()
+        resourceHelperService.determineDomain()
         checkForNewRegister()
-    }
-
-    /**
-     * Sets the base domain URL to use
-     * This is needed because the tag-scanning for the ODS-file returns a relative path
-     */
-    private fun determineDomain() {
-        try {
-            resourceHelperService.determineDomain()
-        } catch (t: Throwable) {
-            logger.error("${t.message?.plus(" ")}Exiting application")
-            exitProcessService.terminateApplicationWithError()
-        }
     }
 
     /**

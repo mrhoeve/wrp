@@ -17,7 +17,6 @@ class WebsiteregisterLifecycleTest {
             mockk { every { determineDocumentURL() } returns documentURL },
             mockk(relaxed = true),
             mockk(relaxed = true),
-            mockk(),
             mockk { every { downloadToTemporaryFile(documentURL) } returns downloadedFile },
             ConcurrentMapCacheManager(RegisterCache.DATA, RegisterCache.METADATA),
         )

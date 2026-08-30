@@ -12,7 +12,6 @@ import com.github.tomakehurst.wiremock.junit5.WireMockTest
 import com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED
 import io.mockk.every
 import io.mockk.mockk
-import nl.hicts.websiteregisterrijksoverheidparser.exception.ExitProcessServiceCalledException
 import nl.hicts.websiteregisterrijksoverheidparser.exception.UnableToDetermineDomainException
 import nl.hicts.websiteregisterrijksoverheidparser.model.RegisterMetadata
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -53,9 +52,6 @@ class WebsiteregisterRijksoverheidServiceTest {
     private lateinit var resourceHelperService: ResourceHelperService
     private lateinit var callbackService: CallbackService
     private val fileProcessingService = FileProcessingService(objectMapper, OdsRegisterParser(), cacheManager)
-    private val exitProcessServiceMock: ExitProcessService = mockk()
-    private val exitProcessServiceCalledExceptionMessage = "thrown from test"
-
     private lateinit var service: WebsiteregisterRijksoverheidService
     private lateinit var defaultDomain: String
     private lateinit var wiremockHost: String
@@ -77,11 +73,6 @@ class WebsiteregisterRijksoverheidServiceTest {
         defaultDomain = "$localhost:${wmRuntimeInfo.httpPort}"
         wiremockHost = "$localhost"
 
-        // Make sure that we won't call exitProcess
-        every { exitProcessServiceMock.terminateApplicationWithError() } throws ExitProcessServiceCalledException(
-            exitProcessServiceCalledExceptionMessage
-        )
-
         createService()
 
         createWiremockStubbing()
@@ -94,18 +85,14 @@ class WebsiteregisterRijksoverheidServiceTest {
             resourceHelperServiceMock,
             callbackService,
             fileProcessingService,
-            exitProcessServiceMock,
             remoteResourceClient,
             cacheManager,
         )
         every { resourceHelperServiceMock.determineDomain() } throws UnableToDetermineDomainException()
 
-        val thrownException = assertThrows<ExitProcessServiceCalledException> {
+        assertThrows<UnableToDetermineDomainException> {
             service.initializeServiceAtStartup()
         }
-
-        io.mockk.verify { exitProcessServiceMock.terminateApplicationWithError() }
-        assertEquals(exitProcessServiceCalledExceptionMessage, thrownException.message)
     }
 
     @Test
@@ -270,7 +257,6 @@ class WebsiteregisterRijksoverheidServiceTest {
             resourceHelperService,
             callbackService,
             fileProcessingService,
-            exitProcessServiceMock,
             remoteResourceClient,
             cacheManager,
         )

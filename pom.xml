@@ -34,8 +34,7 @@
         <sonar.links.homepage>https://github.com/mrhoeve/wrp</sonar.links.homepage>
         <sonar.links.scm>https://github.com/mrhoeve/wrp</sonar.links.scm>
         <sonar.coverage.exclusions>
-            **/WebsiteregisterRijksoverheidParserApplication.kt,
-            **/ExitProcessService.kt
+            **/WebsiteregisterRijksoverheidParserApplication.kt
         </sonar.coverage.exclusions>
         <maven-release-plugin.version>3.3.1</maven-release-plugin.version>
     </properties>

@@ -34,6 +34,7 @@ class CaffeineCacheConfig(
         val timeUnit = determineCacheTimeUnit()
         logger.info("Configure cache to $duration $timeUnit")
         return Caffeine.newBuilder()
+            .recordStats()
             .expireAfterAccess(duration, timeUnit)
     }
 

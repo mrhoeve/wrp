@@ -8,18 +8,15 @@ import com.github.tomakehurst.wiremock.client.WireMock.ok
 import com.github.tomakehurst.wiremock.client.WireMock.okJson
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
-import nl.hicts.websiteregisterrijksoverheidparser.service.ExitProcessService
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito.verifyNoInteractions
 import org.skyscreamer.jsonassert.JSONAssert
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
-import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.web.client.RestClient
 
 @SpringBootTest(
@@ -38,9 +35,6 @@ import org.springframework.web.client.RestClient
 class ApplicationContextIntegrationTest {
     @LocalServerPort
     private var port: Int = 0
-
-    @MockitoBean
-    private lateinit var exitProcessService: ExitProcessService
 
     @Test
     fun `application starts with configured properties and serves the REST contract`() {
@@ -64,7 +58,6 @@ class ApplicationContextIntegrationTest {
         wireMockServer.verify(2, getRequestedFor(urlEqualTo("/source")))
         wireMockServer.verify(1, getRequestedFor(urlEqualTo("/register.ods")))
         wireMockServer.verify(1, getRequestedFor(urlEqualTo("/callback?token=context")))
-        verifyNoInteractions(exitProcessService)
     }
 
     companion object {

@@ -36,7 +36,6 @@ class WebsiteregisterCacheConcurrencyTest {
             mockk { every { determineDocumentURL() } returns documentURL },
             mockk(relaxed = true),
             fileProcessingService,
-            mockk(),
             mockk { every { downloadToTemporaryFile(documentURL) } returns downloadedFile },
             cacheManager,
         )

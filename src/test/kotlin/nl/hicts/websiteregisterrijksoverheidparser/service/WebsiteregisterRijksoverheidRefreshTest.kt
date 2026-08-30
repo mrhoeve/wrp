@@ -33,7 +33,6 @@ class WebsiteregisterRijksoverheidRefreshTest {
             resourceHelperService,
             callbackService,
             fileProcessingService,
-            mockk(),
             remoteResourceClient,
             cacheManager,
         )

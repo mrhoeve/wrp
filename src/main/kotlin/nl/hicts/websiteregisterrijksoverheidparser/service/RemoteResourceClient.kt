@@ -70,7 +70,7 @@ class RemoteResourceClient(
                     }
                 }
             return temporaryFile
-        } catch (throwable: Throwable) {
+        } catch (throwable: Exception) {
             temporaryFile.delete()
             throw throwable
         }

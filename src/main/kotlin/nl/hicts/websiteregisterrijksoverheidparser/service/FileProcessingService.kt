@@ -7,7 +7,7 @@ import org.springframework.cache.CacheManager
 import org.springframework.stereotype.Service
 import org.springframework.util.StopWatch
 import java.io.File
-import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import kotlin.math.roundToInt
 
@@ -33,7 +33,7 @@ class FileProcessingService(
             ?.takeIf { it.documentURL == documentURL }
             ?: RegisterMetadata(
                 documentURL,
-                ZonedDateTime.now(ZoneId.of("UTC")),
+                ZonedDateTime.now(ZoneOffset.UTC),
                 parsedRegister.records.size,
                 parsedRegister.columnHeaders,
             )
@@ -42,7 +42,10 @@ class FileProcessingService(
         registerMetadata = metadata
 
         stopWatch.stop()
-        logger.info("Found ${metadata.registersFound} registerdata, parsed in ${stopWatch.totalTimeSeconds.roundToInt()} seconds")
+        logger.info(
+            "Found ${metadata.registersFound} registerdata, " +
+                "parsed in ${stopWatch.totalTimeSeconds.roundToInt()} seconds",
+        )
     }
 
     /**
@@ -56,15 +59,6 @@ class FileProcessingService(
             ?.put(RegisterCache.METADATA, serializedMetadata)
         cacheManager.getCache(RegisterCache.DATA)
             ?.put(RegisterCache.DATA, serializedData)
-    }
-
-    /**
-     * Clears all cached data and deletes the registerMetadata.
-     */
-    fun clearCachedDataAndInvalidateCache() {
-        registerMetadata = null
-        cacheManager.getCache(RegisterCache.DATA)?.clear()
-        cacheManager.getCache(RegisterCache.METADATA)?.clear()
     }
 
 }
