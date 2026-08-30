@@ -30,6 +30,7 @@ import org.springframework.web.client.RestClient
         "httpmaxdownloadsize=10MB",
         "odsmaxuncompressedsize=10MB",
         "odsmaxrows=10000",
+        "versioncheckenabled=false",
     ],
 )
 class ApplicationContextIntegrationTest {
@@ -44,6 +45,7 @@ class ApplicationContextIntegrationTest {
         val metadata = client.get().uri("/metadata").retrieve().body(String::class.java)
         val health = client.get().uri("/health").retrieve().body(String::class.java)
         val actuatorHealth = client.get().uri("/actuator/health").retrieve().body(String::class.java)
+        val version = client.get().uri("/version").retrieve().body(String::class.java)
         val checkForNew = client.get().uri("/checkfornew").retrieve().body(String::class.java)
 
         JSONAssert.assertEquals(EXPECTED_REGISTER_DATA, registerData, true)
@@ -54,6 +56,11 @@ class ApplicationContextIntegrationTest {
         )
         assertEquals("UP", health)
         JSONAssert.assertEquals("""{"status":"UP"}""", actuatorHealth, false)
+        JSONAssert.assertEquals(
+            """{"version":"1.8","latestVersion":null,"updateAvailable":null,"checkedAt":null}""",
+            version,
+            true,
+        )
         assertEquals("OK", checkForNew)
         wireMockServer.verify(2, getRequestedFor(urlEqualTo("/source")))
         wireMockServer.verify(1, getRequestedFor(urlEqualTo("/register.ods")))

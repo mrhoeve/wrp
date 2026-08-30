@@ -42,9 +42,12 @@ class RemoteResourceClient(
         private val DEFAULT_MAX_DOWNLOAD_SIZE: DataSize = DataSize.ofMegabytes(256)
     }
 
-    fun getText(url: String): String =
+    fun getText(url: String, headers: Map<String, String> = emptyMap()): String =
         restClient.get()
             .uri(URI.create(url))
+            .headers { requestHeaders ->
+                headers.forEach { (name, value) -> requestHeaders.set(name, value) }
+            }
             .retrieve()
             .body(String::class.java)
             .orEmpty()

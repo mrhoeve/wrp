@@ -1,5 +1,6 @@
 package nl.hicts.websiteregisterrijksoverheidparser.service
 
+import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.ok
 import com.github.tomakehurst.wiremock.client.WireMock.serverError
@@ -26,6 +27,22 @@ class RemoteResourceClientTest {
         stubFor(get("/register").willReturn(ok("register page")))
 
         assertEquals("register page", client.getText("${wireMock.httpBaseUrl}/register"))
+    }
+
+    @Test
+    fun `getText sends configured request headers`(wireMock: WireMockRuntimeInfo) {
+        stubFor(
+            get("/release")
+                .withHeader("Accept", equalTo("application/json"))
+                .willReturn(ok("release")),
+        )
+
+        val response = client.getText(
+            "${wireMock.httpBaseUrl}/release",
+            mapOf("Accept" to "application/json"),
+        )
+
+        assertEquals("release", response)
     }
 
     @Test

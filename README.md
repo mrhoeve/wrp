@@ -64,6 +64,23 @@ An invalid `resourceurl` prevents startup. If a valid source is temporarily unav
 
 Returns `UP` with HTTP 200 while the service is running and `DOWN` with HTTP 503 otherwise. This endpoint intentionally reports process health only; it does not indicate whether a register is currently loaded.
 
+### `GET /version`
+
+Returns the version embedded in the running build and the latest published GitHub release known to WRP.
+
+```json
+{
+  "version": "2.0.0",
+  "latestVersion": "2.1.0",
+  "updateAvailable": true,
+  "checkedAt": "2026-08-30T12:00:00Z"
+}
+```
+
+WRP checks for an update in the background, 30 seconds after startup and every six hours thereafter. The endpoint never waits for GitHub. Before the first successful check, `latestVersion`, `updateAvailable`, and `checkedAt` are `null`. A failed later check preserves the last successful result.
+
+Only published GitHub releases participate in the comparison. Draft releases, prereleases, and standalone Git tags are ignored. Versions are compared numerically using the `major.minor.patch` format; a local `-SNAPSHOT` suffix and a release-tag `v` prefix are accepted. Historical two-component releases such as `1.8` are treated as `1.8.0` during comparison.
+
 ### Actuator
 
 - `GET /actuator/health` returns Spring Boot health information.
@@ -105,6 +122,10 @@ All existing configuration names remain supported.
 | `httpmaxdownloadsize` | `256MB` | Maximum downloaded ODS size. |
 | `odsmaxuncompressedsize` | `256MB` | Maximum uncompressed size of `content.xml` inside the ODS archive. |
 | `odsmaxrows` | `100000` | Maximum register rows; configurable up to the ODS limit of `1048576`. |
+| `versioncheckenabled` | `true` | Enables the background check for a newer published WRP release. |
+| `versioncheckurl` | GitHub latest-release API | Endpoint returning the latest GitHub release JSON. |
+| `versioncheckinitialdelay` | `30s` | Delay before the first update check after startup. |
+| `versioncheckinterval` | `6h` | Delay between completed update checks. |
 
 Timeout values use Spring Boot duration notation such as `500ms`, `10s`, or `2m`. Size values use data-size notation such as `10MB` or `1GB`. Timeout and size values must be greater than zero.
 
@@ -140,6 +161,9 @@ services:
       httpmaxdownloadsize: 256MB
       odsmaxuncompressedsize: 256MB
       odsmaxrows: 100000
+      versioncheckenabled: true
+      versioncheckinitialdelay: 30s
+      versioncheckinterval: 6h
 ```
 
 Start the service with:

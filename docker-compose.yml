@@ -23,4 +23,7 @@ services:
 #      httpmaxdownloadsize: 256MB
 #      odsmaxuncompressedsize: 256MB
 #      odsmaxrows: 100000
+#      versioncheckenabled: true
+#      versioncheckinitialdelay: 30s
+#      versioncheckinterval: 6h
 
