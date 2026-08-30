@@ -1,7 +1,8 @@
 package nl.hicts.websiteregisterrijksoverheidparser.service
 
-import org.springframework.http.client.JdkClientHttpRequestFactory
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.http.client.JdkClientHttpRequestFactory
 import org.springframework.stereotype.Component
 import org.springframework.util.unit.DataSize
 import org.springframework.web.client.RestClient
@@ -37,6 +38,7 @@ class RemoteResourceClient(
         .build()
 
     companion object {
+        private val logger = LoggerFactory.getLogger(RemoteResourceClient::class.java)
         private val DEFAULT_CONNECT_TIMEOUT: Duration = Duration.ofSeconds(10)
         private val DEFAULT_READ_TIMEOUT: Duration = Duration.ofSeconds(60)
         private val DEFAULT_MAX_DOWNLOAD_SIZE: DataSize = DataSize.ofMegabytes(256)
@@ -73,9 +75,16 @@ class RemoteResourceClient(
                     }
                 }
             return temporaryFile
-        } catch (throwable: Exception) {
-            temporaryFile.delete()
-            throw throwable
+        } catch (failure: Exception) {
+            cleanupFailedDownload(temporaryFile)
+            throw failure
+        }
+    }
+
+    internal fun cleanupFailedDownload(temporaryFile: File) {
+        if (!temporaryFile.delete()) {
+            logger.warn("Failure to delete temporary download {}; scheduling deletion on JVM exit", temporaryFile)
+            temporaryFile.deleteOnExit()
         }
     }
 

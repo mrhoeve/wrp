@@ -10,12 +10,14 @@ import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo
 import com.github.tomakehurst.wiremock.junit5.WireMockTest
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.web.client.ResourceAccessException
 import org.springframework.web.client.RestClient
 import org.springframework.util.unit.DataSize
+import java.io.File
 import java.time.Duration
 
 @WireMockTest
@@ -82,6 +84,26 @@ class RemoteResourceClientTest {
     }
 
     @Test
+    fun `failed download schedules cleanup when immediate deletion fails`() {
+        val temporaryFile = CleanupTrackingFile(deleteResult = false)
+
+        client.cleanupFailedDownload(temporaryFile)
+
+        assertEquals(1, temporaryFile.deleteAttempts)
+        assertTrue(temporaryFile.deferredDeletion)
+    }
+
+    @Test
+    fun `failed download needs no deferred cleanup after successful deletion`() {
+        val temporaryFile = CleanupTrackingFile(deleteResult = true)
+
+        client.cleanupFailedDownload(temporaryFile)
+
+        assertEquals(1, temporaryFile.deleteAttempts)
+        assertFalse(temporaryFile.deferredDeletion)
+    }
+
+    @Test
     fun `getText follows HTTP redirects`(wireMock: WireMockRuntimeInfo) {
         stubFor(get("/redirect").willReturn(temporaryRedirect("/target")))
         stubFor(get("/target").willReturn(ok("redirected response")))
@@ -127,6 +149,22 @@ class RemoteResourceClientTest {
                 RestClient.builder(),
                 maxDownloadSize = DataSize.ofBytes(0),
             )
+        }
+    }
+
+    private class CleanupTrackingFile(private val deleteResult: Boolean) : File("temporary-download.ods") {
+        var deleteAttempts = 0
+            private set
+        var deferredDeletion = false
+            private set
+
+        override fun delete(): Boolean {
+            deleteAttempts++
+            return deleteResult
+        }
+
+        override fun deleteOnExit() {
+            deferredDeletion = true
         }
     }
 }
