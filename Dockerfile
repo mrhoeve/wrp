@@ -1,27 +1,25 @@
-#
-# Build stage
-#
-FROM maven:3.9.14-amazoncorretto-25 AS build
-COPY src /home/app/src
-COPY pom.xml /home/app
-RUN mvn -f /home/app/pom.xml clean package -DskipTests
+# syntax=docker/dockerfile:1
 
-#
-# Package stage
-#
-FROM amazoncorretto:25-alpine
-ENV SERVICE_NAME="wrp"
+FROM maven:3.9.16-eclipse-temurin-21-alpine AS build
 
-RUN apk -U upgrade
-#RUN apk add --update curl && rm -rf /var/cache/apk/*
-COPY --from=build /home/app/target/WebsiteregisterRijksoverheidParser-*.jar /app/WebsiteregisterRijksoverheidParser.jar
+WORKDIR /workspace
+COPY pom.xml ./
+COPY src ./src
+RUN --mount=type=cache,target=/root/.m2 mvn -B clean verify
 
+FROM eclipse-temurin:21-jre-alpine-3.24
 
-RUN addgroup --gid 1001 -S $SERVICE_NAME && \
-    adduser -G $SERVICE_NAME --shell /bin/false --disabled-password -H --uid 1001 $SERVICE_NAME && \
-    mkdir -p /var/log/$SERVICE_NAME && \
-    chown $SERVICE_NAME:$SERVICE_NAME /var/log/$SERVICE_NAME
+ENV SERVICE_NAME=wrp
+WORKDIR /app
+
+COPY --from=build /workspace/target/WebsiteregisterRijksoverheidParser-*.jar /app/wrp.jar
+
+RUN apk upgrade --no-cache libcrypto3 libssl3 openssl \
+    && addgroup --gid 1001 -S "$SERVICE_NAME" \
+    && adduser --uid 1001 -S -D -H -G "$SERVICE_NAME" "$SERVICE_NAME" \
+    && chown -R "$SERVICE_NAME:$SERVICE_NAME" /app
+
+USER 1001:1001
 EXPOSE 8080
-USER $SERVICE_NAME
-ENTRYPOINT ["java","-jar", "-XX:+UseSerialGC", "-Xss512k","/app/WebsiteregisterRijksoverheidParser.jar"]
 
+ENTRYPOINT ["java", "-XX:+UseSerialGC", "-Xss512k", "-jar", "/app/wrp.jar"]

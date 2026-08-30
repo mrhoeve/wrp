@@ -12,7 +12,6 @@ import com.github.tomakehurst.wiremock.junit5.WireMockTest
 import com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED
 import io.mockk.every
 import io.mockk.mockk
-import nl.hicts.websiteregisterrijksoverheidparser.exception.ExitProcessServiceCalledException
 import nl.hicts.websiteregisterrijksoverheidparser.exception.UnableToDetermineDomainException
 import nl.hicts.websiteregisterrijksoverheidparser.model.RegisterMetadata
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -23,7 +22,7 @@ import org.junit.jupiter.api.assertThrows
 import org.skyscreamer.jsonassert.JSONAssert
 import org.springframework.cache.CacheManager
 import org.springframework.cache.caffeine.CaffeineCacheManager
-import org.springframework.test.util.ReflectionTestUtils
+import org.springframework.web.client.RestClient
 import tools.jackson.databind.ValueDeserializer
 import tools.jackson.databind.cfg.DateTimeFeature
 import tools.jackson.module.kotlin.KotlinModule
@@ -49,12 +48,10 @@ class WebsiteregisterRijksoverheidServiceTest {
     private val objectMapper = createObjectMapperWithDeserializationOfZonedDateTime()
     private val cacheManager: CacheManager = createCacheManagerForTesting()
 
-    private val resourceHelperService = ResourceHelperService()
-    private val callbackService = CallbackService()
-    private val fileProcessingService = FileProcessingService(objectMapper)
-    private val exitProcessServiceMock: ExitProcessService = mockk()
-    private val exitProcessServiceCalledExceptionMessage = "thrown from test"
-
+    private val remoteResourceClient = RemoteResourceClient(RestClient.builder())
+    private lateinit var resourceHelperService: ResourceHelperService
+    private lateinit var callbackService: CallbackService
+    private val fileProcessingService = FileProcessingService(objectMapper, OdsRegisterParser(), cacheManager)
     private lateinit var service: WebsiteregisterRijksoverheidService
     private lateinit var defaultDomain: String
     private lateinit var wiremockHost: String
@@ -76,20 +73,7 @@ class WebsiteregisterRijksoverheidServiceTest {
         defaultDomain = "$localhost:${wmRuntimeInfo.httpPort}"
         wiremockHost = "$localhost"
 
-        // Make sure that we won't call exitProcess
-        every { exitProcessServiceMock.terminateApplicationWithError() } throws ExitProcessServiceCalledException(
-            exitProcessServiceCalledExceptionMessage
-        )
-
-        // Setup service and set de cachemanager via reflection
-        service = WebsiteregisterRijksoverheidService(
-            resourceHelperService,
-            callbackService,
-            fileProcessingService,
-            exitProcessServiceMock,
-        )
-        ReflectionTestUtils.setField(service, "cacheManager", cacheManager)
-        ReflectionTestUtils.setField(fileProcessingService, "cacheManager", cacheManager)
+        createService()
 
         createWiremockStubbing()
     }
@@ -101,23 +85,18 @@ class WebsiteregisterRijksoverheidServiceTest {
             resourceHelperServiceMock,
             callbackService,
             fileProcessingService,
-            exitProcessServiceMock
+            remoteResourceClient,
+            cacheManager,
         )
         every { resourceHelperServiceMock.determineDomain() } throws UnableToDetermineDomainException()
 
-        val thrownException = assertThrows<ExitProcessServiceCalledException> {
+        assertThrows<UnableToDetermineDomainException> {
             service.initializeServiceAtStartup()
         }
-
-        io.mockk.verify { exitProcessServiceMock.terminateApplicationWithError() }
-        assertEquals(exitProcessServiceCalledExceptionMessage, thrownException.message)
     }
 
     @Test
     fun `Full test of service including cachemanager`() {
-        setResourceURL()
-        setCallbackURL()
-
         // Let's start
         // First, determine if startup works
         service.initializeServiceAtStartup()
@@ -170,9 +149,6 @@ class WebsiteregisterRijksoverheidServiceTest {
 
     @Test
     fun `Second check for new register receives the same file`() {
-        setResourceURL()
-        setCallbackURL()
-
         // Let's start
         // First, determine if startup works
         service.initializeServiceAtStartup()
@@ -201,9 +177,7 @@ class WebsiteregisterRijksoverheidServiceTest {
 
     @Test
     fun `Test callbackparameter`() {
-        setResourceURL()
-        setCallbackURL()
-        setCallbackparameter()
+        createService("token=xyz")
 
         // Let's start
         // First, determine if startup works
@@ -228,14 +202,14 @@ class WebsiteregisterRijksoverheidServiceTest {
         createBinaryLink(REGISTER_1_SITE)
 
     private fun dataFromOneSite(): String = """
-        [{"URL":"http://www.rijksoverheid.nl","Organisatietype":"Rijksoverheid","Organisatie":"AZ","Suborganisatie":"DPC","Afdeling":"Online Advies","Bezoeken/mnd":"23.245.794","Voldoet":"ja","Totaal":"ja","IPv6":"ja","DNSSEC":"ja","HTTPS":"ja","CSP":"waarschuwing","RefPol.":"ja","X-Cont.":"ja","X-Frame.":"ja","Testdatum":"14-07-2022","STARTTLS en DANE":"","DMARC":"ja","DKIM":"","SPF":"ja","Platformgebruik":"Platform Rijksoverheid Online (AZ)"}]
+        [{"URL":"http://www.rijksoverheid.nl","Organisatietype":"Rijksoverheid","Organisatie":"AZ","Suborganisatie":"DPC","Afdeling":"Online Advies","Bezoeken/mnd":"23.245.794","Voldoet":"ja","Websitetest Totaal":"ja","Websitetest IPv6":"ja","Websitetest DNSSEC":"ja","HTTPS":"ja","CSP":"waarschuwing","RefPol.":"ja","X-Cont.":"ja","X-Frame.":"ja","Websitetest Testdatum":"21-06-2022","E-mailtest Totaal":"ja","E-mailtest IPv6":"ja","E-mailtest DNSSEC":"ja","STARTTLS en DANE":"","DMARC":"ja","DKIM":"","SPF":"ja","E-mailtest Testdatum":"14-07-2022","Platformgebruik":"Platform Rijksoverheid Online (AZ)"}]
     """.trimIndent()
 
     private fun binaryLinkWithTwoSites(): String =
         createBinaryLink(REGISTER_2_SITES)
 
     private fun dataFromTwoSites(): String = """
-        [{"URL":"http://www.rijksoverheid.nl","Organisatietype":"Rijksoverheid","Organisatie":"AZ","Suborganisatie":"DPC","Afdeling":"Online Advies","Bezoeken/mnd":"23.245.794","Voldoet":"ja","Totaal":"ja","IPv6":"ja","DNSSEC":"ja","HTTPS":"ja","CSP":"waarschuwing","RefPol.":"ja","X-Cont.":"ja","X-Frame.":"ja","Testdatum":"14-07-2022","STARTTLS en DANE":"","DMARC":"ja","DKIM":"","SPF":"ja","Platformgebruik":"Platform Rijksoverheid Online (AZ)"},{"URL":"http://www.nederlandwereldwijd.nl","Organisatietype":"Rijksoverheid","Organisatie":"BUZA","Suborganisatie":"","Afdeling":"","Bezoeken/mnd":"6.520.737","Voldoet":"ja","Totaal":"nee","IPv6":"ja","DNSSEC":"ja","HTTPS":"ja","CSP":"ja","RefPol.":"ja","X-Cont.":"ja","X-Frame.":"ja","Testdatum":"14-07-2022","STARTTLS en DANE":"","DMARC":"ja","DKIM":"nee","SPF":"nee","Platformgebruik":"Platform Rijksoverheid Online (AZ)"}]
+        [{"URL":"http://www.rijksoverheid.nl","Organisatietype":"Rijksoverheid","Organisatie":"AZ","Suborganisatie":"DPC","Afdeling":"Online Advies","Bezoeken/mnd":"23.245.794","Voldoet":"ja","Websitetest Totaal":"ja","Websitetest IPv6":"ja","Websitetest DNSSEC":"ja","HTTPS":"ja","CSP":"waarschuwing","RefPol.":"ja","X-Cont.":"ja","X-Frame.":"ja","Websitetest Testdatum":"21-06-2022","E-mailtest Totaal":"ja","E-mailtest IPv6":"ja","E-mailtest DNSSEC":"ja","STARTTLS en DANE":"","DMARC":"ja","DKIM":"","SPF":"ja","E-mailtest Testdatum":"14-07-2022","Platformgebruik":"Platform Rijksoverheid Online (AZ)"},{"URL":"http://www.nederlandwereldwijd.nl","Organisatietype":"Rijksoverheid","Organisatie":"BUZA","Suborganisatie":"","Afdeling":"","Bezoeken/mnd":"6.520.737","Voldoet":"ja","Websitetest Totaal":"ja","Websitetest IPv6":"ja","Websitetest DNSSEC":"ja","HTTPS":"ja","CSP":"ja","RefPol.":"ja","X-Cont.":"ja","X-Frame.":"ja","Websitetest Testdatum":"21-06-2022","E-mailtest Totaal":"nee","E-mailtest IPv6":"ja","E-mailtest DNSSEC":"ja","STARTTLS en DANE":"","DMARC":"ja","DKIM":"nee","SPF":"nee","E-mailtest Testdatum":"14-07-2022","Platformgebruik":"Platform Rijksoverheid Online (AZ)"}]
     """.trimIndent()
 
     private fun createBinaryLink(linkToFile: String): String =
@@ -249,47 +223,42 @@ class WebsiteregisterRijksoverheidServiceTest {
         "Afdeling",
         "Bezoeken/mnd",
         "Voldoet",
-        "Totaal",
-        "IPv6",
-        "DNSSEC",
+        "Websitetest Totaal",
+        "Websitetest IPv6",
+        "Websitetest DNSSEC",
         "HTTPS",
         "CSP",
         "RefPol.",
         "X-Cont.",
         "X-Frame.",
-        "Testdatum",
-        "Totaal",
-        "IPv6",
-        "DNSSEC",
+        "Websitetest Testdatum",
+        "E-mailtest Totaal",
+        "E-mailtest IPv6",
+        "E-mailtest DNSSEC",
         "STARTTLS en DANE",
         "DMARC",
         "DKIM",
         "SPF",
-        "Testdatum",
+        "E-mailtest Testdatum",
         "Platformgebruik"
     )
 
-    private fun setResourceURL(resourceURL: String? = null) {
-        ReflectionTestUtils.setField(
+    private fun createService(callbackParameter: String = "") {
+        resourceHelperService = ResourceHelperService(
+            remoteResourceClient,
+            "http://$defaultDomain$defaultResourceURL",
+        )
+        callbackService = CallbackService(
+            remoteResourceClient,
+            "http://$defaultDomain/callback",
+            callbackParameter,
+        )
+        service = WebsiteregisterRijksoverheidService(
             resourceHelperService,
-            "resourceURL",
-            resourceURL ?: "http://$defaultDomain$defaultResourceURL"
-        )
-    }
-
-    private fun setCallbackURL() {
-        ReflectionTestUtils.setField(
             callbackService,
-            "callbackURL",
-            "http://$defaultDomain/callback"
-        )
-    }
-
-    private fun setCallbackparameter() {
-        ReflectionTestUtils.setField(
-            callbackService,
-            "callbackparameter",
-            "token=xyz"
+            fileProcessingService,
+            remoteResourceClient,
+            cacheManager,
         )
     }
 
@@ -350,17 +319,14 @@ class WebsiteregisterRijksoverheidServiceTest {
 
     // Create a specialized cachemanager for testing
     private fun createCacheManagerForTesting(): CacheManager {
-        val cacheManager = CaffeineCacheManager("data", "metadata")
+        val cacheManager = CaffeineCacheManager(RegisterCache.DATA, RegisterCache.METADATA)
         cacheManager.setCaffeine(caffeineCacheBuilder())
         return cacheManager
     }
 
     private fun caffeineCacheBuilder(): Caffeine<Any, Any> {
         return Caffeine.newBuilder()
-            .initialCapacity(2500)
-            .maximumSize(3000)
             .expireAfterAccess(CACHEMANAGER_TIMEOUT, CACHEMANAGER_TIMEOUT_TIMEUNIT)
-            .weakKeys()
     }
 
     // Class used for deserialization of ZonedDateTime
@@ -371,7 +337,7 @@ class WebsiteregisterRijksoverheidServiceTest {
             deserializationContext: DeserializationContext?
         ): ZonedDateTime {
             val localDate: LocalDateTime = LocalDateTime.parse(
-                jsonParser.text,
+                jsonParser.string,
                 DateTimeFormatter.ISO_DATE_TIME
             )
             return localDate.atZone(ZoneOffset.UTC)

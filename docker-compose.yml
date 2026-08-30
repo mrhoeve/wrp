@@ -1,24 +1,29 @@
-#  To run in the foreground (easiest)
-#  > docker-compose up
+# Run a locally built image in the foreground:
+#   docker compose up --build
 #
-#  To run in the background and tail the logs
-#  > docker-compose up -d
-#  > docker-compose logs -f
-#
-#  Subsequent builds (if you change Dockerfile)
-#  > docker-compose build
-#
-version: "3.7"
+# Run it in the background and follow the logs:
+#   docker compose up --build -d
+#   docker compose logs -f
+
 services:
   wrp:
+    build:
+      context: .
     image: mrhoeve/wrp:latest
-    container_name: wrp
     ports:
-      - 8080:8080
+      - "8080:8080"
 #    environment:
-#      resourceurl: https://resource.url/containing/ods/file
-#      callbackurl: https://some.url.to/callback
+#      resourceurl: https://resource.example/page-containing-the-ods-link
+#      callbackurl: https://consumer.example/updated
 #      callbackparameter: token=xyz
-#      cacheduration: cacheduration
-#      cachetimeunit: cachetimeunit
+#      cacheduration: 15
+#      cachetimeunit: MINUTES
+#      httpconnecttimeout: 10s
+#      httpreadtimeout: 60s
+#      httpmaxdownloadsize: 256MB
+#      odsmaxuncompressedsize: 256MB
+#      odsmaxrows: 100000
+#      versioncheckenabled: true
+#      versioncheckinitialdelay: 30s
+#      versioncheckinterval: 6h
 

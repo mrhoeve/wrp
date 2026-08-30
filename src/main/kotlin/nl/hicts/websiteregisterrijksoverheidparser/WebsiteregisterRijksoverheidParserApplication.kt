@@ -2,7 +2,6 @@ package nl.hicts.websiteregisterrijksoverheidparser
 
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
-import org.springframework.cache.annotation.EnableCaching
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.scheduling.annotation.EnableScheduling
@@ -13,7 +12,6 @@ import tools.jackson.module.kotlin.KotlinModule
 
 
 @SpringBootApplication
-@EnableCaching
 @EnableScheduling
 class WebsiteregisterRijksoverheidParserApplication
 

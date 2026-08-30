@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>4.0.5</version>
+        <version>4.1.1</version>
         <relativePath /> <!-- lookup parent from repository -->
     </parent>
     <groupId>nl.hicts</groupId>
@@ -19,30 +19,26 @@
         </developer>
     </developers>
     <properties>
-        <!-- versions related to Spring boot -->
         <java.version>21</java.version>
-        <odfdom.version>0.13.0</odfdom.version>
         <wiremock-standalone.version>3.13.2</wiremock-standalone.version>
-        <jsoup.version>1.22.1</jsoup.version>
-        <mockk.version>1.14.9</mockk.version>
+        <jsoup.version>1.23.2</jsoup.version>
+        <mockk.version>1.14.11</mockk.version>
+        <jacoco-maven-plugin.version>0.8.15</jacoco-maven-plugin.version>
+        <jacoco.minimum.line.coverage>0.90</jacoco.minimum.line.coverage>
+        <jacoco.minimum.branch.coverage>0.70</jacoco.minimum.branch.coverage>
+        <sonar-maven-plugin.version>5.7.0.6970</sonar-maven-plugin.version>
+        <cyclonedx-maven-plugin.version>2.9.3</cyclonedx-maven-plugin.version>
         <sonar.projectKey>mrhoeve_wrp</sonar.projectKey>
         <sonar.organization>mrhoeve</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.links.homepage>https://github.com/mrhoeve/wrp</sonar.links.homepage>
         <sonar.links.scm>https://github.com/mrhoeve/wrp</sonar.links.scm>
         <sonar.coverage.exclusions>
-            **/WebsiteregisterRijksoverheidParserApplication.kt,
-            **/ExitProcessService.kt
+            **/WebsiteregisterRijksoverheidParserApplication.kt
         </sonar.coverage.exclusions>
-        <maven-release-plugin.version>3.1.1</maven-release-plugin.version>
     </properties>
     <dependencyManagement>
        <dependencies>
-           <dependency>
-               <groupId>org.odftoolkit</groupId>
-               <artifactId>odfdom-java</artifactId>
-               <version>${odfdom.version}</version>
-           </dependency>
            <dependency>
                <groupId>org.jsoup</groupId>
                <artifactId>jsoup</artifactId>
@@ -100,10 +96,6 @@
             <artifactId>kotlin-stdlib-jdk8</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.odftoolkit</groupId>
-            <artifactId>odfdom-java</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.jsoup</groupId>
             <artifactId>jsoup</artifactId>
         </dependency>
@@ -135,16 +127,15 @@
         <testSourceDirectory>${project.basedir}/src/test/kotlin</testSourceDirectory>
         <plugins>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-release-plugin</artifactId>
-                <version>${maven-release-plugin.version}</version>
-                <configuration>
-                    <tagNameFormat>@{project.version}</tagNameFormat>
-                </configuration>
-            </plugin>
-            <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>build-info</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.jetbrains.kotlin</groupId>
@@ -168,7 +159,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.14</version>
+                <version>${jacoco-maven-plugin.version}</version>
                 <executions>
                     <execution>
                         <goals>
@@ -182,17 +173,43 @@
                             <goal>report</goal>
                         </goals>
                     </execution>
+                    <execution>
+                        <id>coverage-check</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>${jacoco.minimum.line.coverage}</minimum>
+                                        </limit>
+                                        <limit>
+                                            <counter>BRANCH</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>${jacoco.minimum.branch.coverage}</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
             <plugin>
                 <groupId>org.sonarsource.scanner.maven</groupId>
                 <artifactId>sonar-maven-plugin</artifactId>
-                <version>5.2.0.4988</version>
+                <version>${sonar-maven-plugin.version}</version>
             </plugin>
             <!-- create a sbom, see https://www.baeldung.com/spring-boot-actuators -->
             <plugin>
                 <groupId>org.cyclonedx</groupId>
                 <artifactId>cyclonedx-maven-plugin</artifactId>
+                <version>${cyclonedx-maven-plugin.version}</version>
                 <executions>
                     <execution>
                         <phase>generate-resources</phase>

@@ -1,66 +1,52 @@
 package nl.hicts.websiteregisterrijksoverheidparser.service
 
+import jakarta.annotation.PreDestroy
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.cache.CacheManager
-import org.springframework.cache.annotation.CacheConfig
-import org.springframework.cache.annotation.Cacheable
-import org.springframework.cache.caffeine.CaffeineCache
 import org.springframework.context.event.EventListener
-import org.springframework.http.HttpMethod
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
-import org.springframework.util.StreamUtils
-import org.springframework.web.client.RestTemplate
 import java.io.File
-import java.io.FileOutputStream
-import java.net.URI
 
 
 @Service
-@CacheConfig(cacheNames = ["data", "metadata"])
 class WebsiteregisterRijksoverheidService(
-    val resourceHelperService: ResourceHelperService,
-    val callbackService: CallbackService,
-    val fileProcessingService: FileProcessingService,
-    val exitProcessService: ExitProcessService
+    private val resourceHelperService: ResourceHelperService,
+    private val callbackService: CallbackService,
+    private val fileProcessingService: FileProcessingService,
+    private val remoteResourceClient: RemoteResourceClient,
+    private val cacheManager: CacheManager,
 ) {
-
-    @Autowired
-    private lateinit var cacheManager: CacheManager
     private val logger = LoggerFactory.getLogger(WebsiteregisterRijksoverheidService::class.java)
 
-    /**
-     * Used semi-static variables
-     * these are only changed when a (new) register is discovered
-     */
-    private var tempFile: File? = null
-    private var documentURL: String? = null
+    private val cacheReloadMonitor = Any()
+
+    @Volatile
+    private var activeRegister: ActiveRegister? = null
 
     /**
-     * Serves [FileProcessingService.registerMetadata] as JSON from the cache
+     * Serves the register metadata as JSON from the cache.
      * When the cache doesn't contain the metadata-key, all data is reloaded into the cache
      */
-    @Cacheable(cacheNames = ["metadata"])
-    fun getMetadata(): String {
-        if ((cacheManager.getCache("metadata") as CaffeineCache).nativeCache.asMap().values.firstOrNull() == null) {
-            processFile()
-        }
-        return (cacheManager.getCache("metadata") as CaffeineCache).nativeCache.asMap().values.first() as String
-    }
+    fun getMetadata(): String = getCachedValue(RegisterCache.METADATA)
 
     /**
-     * Serves [FileProcessingService.data] as JSON from the cache
+     * Serves the parsed register data as JSON from the cache
      * When the cache doesn't contain the data-key, all data is reloaded into the cache
      */
-    @Cacheable(cacheNames = ["data"])
-    fun getRegisterData(): String {
-        if ((cacheManager.getCache("data") as CaffeineCache).nativeCache.asMap().values.firstOrNull() == null) {
+    fun getRegisterData(): String = getCachedValue(RegisterCache.DATA)
+
+    private fun getCachedValue(cacheName: String): String {
+        cacheManager.getCache(cacheName)?.get(cacheName, String::class.java)?.let { return it }
+
+        return synchronized(cacheReloadMonitor) {
+            cacheManager.getCache(cacheName)?.get(cacheName, String::class.java)?.let { return@synchronized it }
             processFile()
+            checkNotNull(cacheManager.getCache(cacheName)?.get(cacheName, String::class.java)) {
+                "Cache '$cacheName' was not populated after processing the register"
+            }
         }
-        val result = (cacheManager.getCache("data") as CaffeineCache).nativeCache.asMap().values.first() as String
-        return result
     }
 
     /**
@@ -68,21 +54,8 @@ class WebsiteregisterRijksoverheidService(
      */
     @EventListener(ApplicationReadyEvent::class)
     fun initializeServiceAtStartup() {
-        determineDomain()
+        resourceHelperService.determineDomain()
         checkForNewRegister()
-    }
-
-    /**
-     * Sets the base domain URL to use
-     * This is needed because the tag-scanning for the ODS-file returns a relative path
-     */
-    private fun determineDomain() {
-        try {
-            resourceHelperService.determineDomain()
-        } catch (t: Throwable) {
-            logger.error("${t.message?.plus(" ")}Exiting application")
-            exitProcessService.terminateApplicationWithError()
-        }
     }
 
     /**
@@ -94,46 +67,60 @@ class WebsiteregisterRijksoverheidService(
      * When [CallbackService.callbackURL] is not null or blank, a callback is executed after loading the new register
      */
     @Scheduled(cron = "@hourly")
+    @Synchronized
     fun checkForNewRegister() {
         logger.info("Checking for new register")
         val retrievedDocumentURL = resourceHelperService.determineDocumentURL()
         retrievedDocumentURL?.let { retrieved ->
-            if (retrieved == documentURL) {
+            if (retrieved == activeRegister?.documentURL) {
                 logger.info("No new register found -- keeping current one")
                 return
             }
             logger.info("Register found at URL $retrieved")
+            var downloadedFile: File? = null
             try {
-                tempFile?.let { file ->
-                    val deleted = file.delete()
-                    if (!deleted) logger.warn("Failure to delete file ${file.toPath()}")
-                }
-                tempFile = null
-                documentURL = retrieved
-                downloadFileToTemp(retrieved)
-                fileProcessingService.clearCachedDataAndInvalidateCache()
-                processFile()
+                downloadedFile = remoteResourceClient.downloadToTemporaryFile(retrieved)
+                fileProcessingService.processFile(downloadedFile, retrieved)
+
+                val previousRegister = activeRegister
+                activeRegister = ActiveRegister(retrieved, downloadedFile)
+                downloadedFile = null
+                deleteTemporaryFile(previousRegister?.tempFile)
                 callbackService.performCallback()
-            } catch (t: Throwable) {
-                logger.error("Unexpected error occurred.", t)
+            } catch (exception: Exception) {
+                deleteTemporaryFile(downloadedFile)
+                logger.error("Unable to load register from $retrieved; keeping the current register.", exception)
             }
         }
     }
 
     private fun processFile() {
-        fileProcessingService.processFile(checkNotNull(tempFile), checkNotNull(documentURL))
+        val register = checkNotNull(activeRegister) { "No register has been loaded" }
+        fileProcessingService.processFile(register.tempFile, register.documentURL)
     }
 
-    /**
-     * Downloads the given file at [givenDocumentURL] to a temporary file.
-     */
-    private fun downloadFileToTemp(givenDocumentURL: String) {
-        val restTemplate = RestTemplate()
-        tempFile = restTemplate.execute(URI(givenDocumentURL), HttpMethod.GET, null) { clientHttpResponse ->
-            val ret: File = File.createTempFile("document", ".ods")
-            tempFile = ret
-            StreamUtils.copy(clientHttpResponse.body, FileOutputStream(ret))
-            ret
+    @PreDestroy
+    @Synchronized
+    fun cleanupTemporaryFile() {
+        synchronized(cacheReloadMonitor) {
+            val register = activeRegister
+            activeRegister = null
+            deleteTemporaryFile(register?.tempFile)
         }
     }
+
+    private fun deleteTemporaryFile(file: File?) {
+        file?.let {
+            val deleted = it.delete()
+            if (!deleted) {
+                logger.warn("Failure to delete file ${it.toPath()}; scheduling deletion on JVM exit")
+                it.deleteOnExit()
+            }
+        }
+    }
+
+    private data class ActiveRegister(
+        val documentURL: String,
+        val tempFile: File,
+    )
 }

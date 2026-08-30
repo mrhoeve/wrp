@@ -20,8 +20,9 @@ class CustomHealthController(
     @GetMapping("/health", produces = [MediaType.TEXT_PLAIN_VALUE])
     fun plainHealth(): ResponseEntity<String> {
         val health = healthEndpoint.health()
-        if(health.status == Status.UP)
+        if (health.status == Status.UP) {
             return ResponseEntity.ok(UP)
+        }
 
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
             .body(DOWN)

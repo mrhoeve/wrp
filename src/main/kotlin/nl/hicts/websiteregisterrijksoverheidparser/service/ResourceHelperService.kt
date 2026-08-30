@@ -8,7 +8,10 @@ import org.springframework.stereotype.Service
 import java.net.URI
 
 @Service
-class ResourceHelperService {
+class ResourceHelperService(
+    private val remoteResourceClient: RemoteResourceClient,
+    @param:Value("\${resourceurl:$BASE_RESOURCE_URL}") private val resourceURL: String,
+) {
     companion object {
         private const val BASE_DOMAIN = "https://www.communicatierijk.nl"
         const val BASE_RESOURCE_URL =
@@ -17,50 +20,50 @@ class ResourceHelperService {
 
     private val logger = LoggerFactory.getLogger(ResourceHelperService::class.java)
 
-    @Value("\${resourceurl:$BASE_RESOURCE_URL}")
-    private lateinit var resourceURL: String
-
-    private lateinit var domain: String
+    private lateinit var resourceURI: URI
 
     /**
-     * Determines the base domain URL to use
+     * Validates and stores the configured resource URI.
      */
     @Throws(UnableToDetermineDomainException::class)
     fun determineDomain() {
         try {
-            val url = URI.create(resourceURL).toURL()
-            domain = if (url.port != -1) {
-                url.protocol.plus("://").plus(url.host).plus(":").plus(url.port)
-            } else {
-                url.protocol.plus("://").plus(url.host)
-            }
-        } catch (_: Throwable) {
-            throw UnableToDetermineDomainException("Unable to parse resourceURL '${resourceURL}', could not determine domain.")
+            val configuredURI = URI.create(resourceURL)
+            require(configuredURI.scheme.equals("http", ignoreCase = true) ||
+                configuredURI.scheme.equals("https", ignoreCase = true))
+            require(!configuredURI.host.isNullOrBlank())
+            resourceURI = configuredURI
+        } catch (exception: Exception) {
+            throw UnableToDetermineDomainException(
+                "resourceurl must be an absolute HTTP(S) URL: '$resourceURL'",
+                exception,
+            )
         }
     }
 
     /**
      * Loads the [resourceURL] and searches for a tag containing '.ods' in the href attribute.
-     * When found, it retrieves the given href thus resulting in a relative path to the register.
-     * This path gets prefixed with the domain, resulting in an absolute path.
+     * Relative, root-relative, protocol-relative and absolute links are resolved against [resourceURL].
      */
     fun determineDocumentURL(): String? {
         var linkToDocument: String? = null
         try {
-            val doc = Jsoup.connect(resourceURL).get()
+            val doc = Jsoup.parse(remoteResourceClient.getText(resourceURL), resourceURL)
             linkToDocument =
                 doc.select("a").firstOrNull { it.attributes()["href"].contains(".ods", true) }?.attributes()?.get("href")
-        } catch (t: Throwable) {
-            logger.error("Unable to connect to $resourceURL", t)
+        } catch (exception: Exception) {
+            logger.error("Unable to connect to $resourceURL", exception)
         }
         if (linkToDocument == null) {
             logger.error("Could not determine link to the registerdocument")
             return null
         }
-        if (linkToDocument.startsWith("http", true)) {
-            return linkToDocument
+        return try {
+            resourceURI.resolve(linkToDocument).toString()
+        } catch (exception: Exception) {
+            logger.error("Unable to resolve registerdocument link '$linkToDocument'", exception)
+            null
         }
-        return domain.plus(linkToDocument)
     }
 
 }
