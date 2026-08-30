@@ -117,6 +117,9 @@ services:
       cachetimeunit: cachetimeunit
       httpconnecttimeout: 10s
       httpreadtimeout: 60s
+      httpmaxdownloadsize: 256MB
+      odsmaxuncompressedsize: 256MB
+      odsmaxrows: 100000
 ```
 # Environment variables
 `resourceurl` defaults to `https://www.communicatierijk.nl/documenten/2016/05/26/websiteregister`. Use `callbackurl` to specify the page that must be notified when a new datafile is detected. When `callbackparameter` is specified, the callbackurl is appended with `?` and the given value.
@@ -130,3 +133,5 @@ Using `cacheduration` the cache can be configured to how long it should stay ali
 When no value, or an illegal value, has been set, it defaults to `MINUTES`.
 
 `httpconnecttimeout` limits how long WRP waits while establishing an outbound HTTP connection and defaults to `10s`. `httpreadtimeout` limits how long WRP waits for data from the source or callback and defaults to `60s`. Both values use Spring Boot duration notation, such as `500ms`, `10s`, or `2m`, and must be greater than zero.
+
+`httpmaxdownloadsize` limits an ODS download and defaults to `256MB`. `odsmaxuncompressedsize` applies the same default limit to the uncompressed `content.xml` inside the ODS archive. `odsmaxrows` protects memory usage from excessive repeated rows and defaults to `100000`; it can be raised up to the ODS spreadsheet limit of `1048576`. These safeguards do not impose a fixed column layout: every column present in a valid source is still parsed, up to the ODS limit of `16384` columns.

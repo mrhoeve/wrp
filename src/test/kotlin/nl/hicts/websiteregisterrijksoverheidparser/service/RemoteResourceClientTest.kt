@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.web.client.ResourceAccessException
 import org.springframework.web.client.RestClient
+import org.springframework.util.unit.DataSize
 import java.time.Duration
 
 @WireMockTest
@@ -47,6 +48,19 @@ class RemoteResourceClientTest {
 
         assertThrows<IllegalStateException> {
             client.downloadToTemporaryFile("${wireMock.httpBaseUrl}/register.ods")
+        }
+    }
+
+    @Test
+    fun `downloadToTemporaryFile rejects responses above the configured maximum`(wireMock: WireMockRuntimeInfo) {
+        stubFor(get("/large-register.ods").willReturn(ok().withBody("too much data")))
+        val sizeLimitedClient = RemoteResourceClient(
+            RestClient.builder(),
+            maxDownloadSize = DataSize.ofBytes(5),
+        )
+
+        assertThrows<IllegalStateException> {
+            sizeLimitedClient.downloadToTemporaryFile("${wireMock.httpBaseUrl}/large-register.ods")
         }
     }
 
@@ -89,6 +103,12 @@ class RemoteResourceClientTest {
                 RestClient.builder(),
                 connectTimeout = Duration.ofSeconds(1),
                 readTimeout = Duration.ofSeconds(-1),
+            )
+        }
+        assertThrows<IllegalArgumentException> {
+            RemoteResourceClient(
+                RestClient.builder(),
+                maxDownloadSize = DataSize.ofBytes(0),
             )
         }
     }

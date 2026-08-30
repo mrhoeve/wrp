@@ -1,7 +1,9 @@
 package nl.hicts.websiteregisterrijksoverheidparser.service
 
 import nl.hicts.websiteregisterrijksoverheidparser.model.ParsedRegister
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
+import org.springframework.util.unit.DataSize
 import java.io.File
 import java.io.InputStream
 import java.util.zip.ZipFile
@@ -10,13 +12,20 @@ import javax.xml.stream.XMLStreamConstants
 import javax.xml.stream.XMLStreamReader
 
 @Component
-class OdsRegisterParser {
+class OdsRegisterParser(
+    @param:Value("\${odsmaxuncompressedsize:256MB}") private val maxUncompressedSize: DataSize = DEFAULT_MAX_UNCOMPRESSED_SIZE,
+    @param:Value("\${odsmaxrows:100000}") private val maxRows: Int = DEFAULT_MAX_ROWS,
+) {
     companion object {
         private const val CONTENT_XML = "content.xml"
         private const val TABLE_NAMESPACE = "urn:oasis:names:tc:opendocument:xmlns:table:1.0"
         private const val TEXT_NAMESPACE = "urn:oasis:names:tc:opendocument:xmlns:text:1.0"
         private const val OFFICE_NAMESPACE = "urn:oasis:names:tc:opendocument:xmlns:office:1.0"
         private const val MAX_COLUMNS = 16_384
+        private const val MAX_ODS_ROWS = 1_048_576
+        private const val MAX_TEXT_SPACE_REPETITION = 1_000_000
+        private const val DEFAULT_MAX_ROWS = 100_000
+        private val DEFAULT_MAX_UNCOMPRESSED_SIZE = DataSize.ofMegabytes(256)
 
         private val GROUP_ALIASES = mapOf(
             "Websitetest Internet.nl" to "Websitetest",
@@ -24,10 +33,18 @@ class OdsRegisterParser {
         )
     }
 
+    init {
+        require(maxUncompressedSize.toBytes() > 0) { "odsmaxuncompressedsize must be greater than zero" }
+        require(maxRows in 1..MAX_ODS_ROWS) { "odsmaxrows must be between 1 and $MAX_ODS_ROWS" }
+    }
+
     fun parse(file: File): ParsedRegister {
         ZipFile(file).use { archive ->
             val content = archive.getEntry(CONTENT_XML)
                 ?: throw IllegalArgumentException("The ODS document does not contain $CONTENT_XML")
+            require(content.size in 1..maxUncompressedSize.toBytes()) {
+                "$CONTENT_XML exceeds the configured maximum of $maxUncompressedSize"
+            }
             archive.getInputStream(content).use { input ->
                 return parseContent(input)
             }
@@ -45,8 +62,7 @@ class OdsRegisterParser {
             val rows = readRequiredRows(reader)
             require(rows.size >= 2) { "The ODS document does not contain group and header rows" }
 
-            val numberOfRows = rows[0].firstOrNull()?.toIntOrNull()?.takeIf { it >= 0 }
-                ?: throw IllegalArgumentException("Cell A1 does not contain a valid number of register rows")
+            val numberOfRows = declaredRowCount(rows[0])
             require(rows.size == numberOfRows + 2) {
                 "The ODS document contains ${rows.size - 2} register rows, expected $numberOfRows"
             }
@@ -79,15 +95,12 @@ class OdsRegisterParser {
             when (reader.next()) {
                 XMLStreamConstants.START_ELEMENT -> {
                     if (reader.namespaceURI == TABLE_NAMESPACE && reader.localName == "table-row") {
-                        val repeated = repeatedCount(reader, "number-rows-repeated")
+                        val repeated = repeatedCount(reader, "number-rows-repeated", maxRows + 2)
                         val row = readRow(reader)
                         repeat(repeated.coerceAtMost((requiredRows ?: 2) - rows.size).coerceAtLeast(0)) {
                             rows.add(row)
                             if (rows.size == 1) {
-                                val count = row.firstOrNull()?.toIntOrNull()?.takeIf { it >= 0 }
-                                    ?: throw IllegalArgumentException(
-                                        "Cell A1 does not contain a valid number of register rows"
-                                    )
+                                val count = declaredRowCount(row)
                                 requiredRows = count + 2
                             }
                         }
@@ -111,7 +124,7 @@ class OdsRegisterParser {
                     if (reader.namespaceURI == TABLE_NAMESPACE &&
                         reader.localName in setOf("table-cell", "covered-table-cell")
                     ) {
-                        val repeated = repeatedCount(reader, "number-columns-repeated")
+                        val repeated = repeatedCount(reader, "number-columns-repeated", MAX_COLUMNS)
                         val value = readCell(reader)
                         repeat(repeated.coerceAtMost(MAX_COLUMNS - values.size).coerceAtLeast(0)) {
                             values.add(value)
@@ -145,8 +158,8 @@ class OdsRegisterParser {
                         when (reader.localName) {
                             "p" -> paragraph = StringBuilder()
                             "s" -> {
-                                val count = reader.getAttributeValue(TEXT_NAMESPACE, "c")?.toIntOrNull() ?: 1
-                                repeat(count.coerceAtLeast(1)) { paragraph?.append(' ') }
+                                val count = repeatedCount(reader, "c", MAX_TEXT_SPACE_REPETITION, TEXT_NAMESPACE)
+                                repeat(count) { paragraph?.append(' ') }
                             }
                             "tab" -> paragraph?.append('\t')
                             "line-break" -> paragraph?.append('\n')
@@ -169,8 +182,24 @@ class OdsRegisterParser {
         return if (paragraphs.isNotEmpty()) paragraphs.joinToString("\n") else fallbackValue
     }
 
-    private fun repeatedCount(reader: XMLStreamReader, attribute: String): Int {
-        return reader.getAttributeValue(TABLE_NAMESPACE, attribute)?.toIntOrNull()?.takeIf { it > 0 } ?: 1
+    private fun repeatedCount(
+        reader: XMLStreamReader,
+        attribute: String,
+        maximum: Int,
+        namespace: String = TABLE_NAMESPACE,
+    ): Int {
+        val configuredCount = reader.getAttributeValue(namespace, attribute) ?: return 1
+        val count = configuredCount.toIntOrNull()
+            ?: throw IllegalArgumentException("Attribute '$attribute' does not contain a valid repetition count")
+        require(count in 1..maximum) { "Attribute '$attribute' exceeds the maximum repetition count of $maximum" }
+        return count
+    }
+
+    private fun declaredRowCount(row: List<String>): Int {
+        val count = row.firstOrNull()?.toIntOrNull()?.takeIf { it >= 0 }
+            ?: throw IllegalArgumentException("Cell A1 does not contain a valid number of register rows")
+        require(count <= maxRows) { "The ODS document declares $count rows; configured maximum is $maxRows" }
+        return count
     }
 
     private fun readRawHeaders(headerRow: List<String>): List<String> {

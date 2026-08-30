@@ -5,6 +5,10 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
+import org.springframework.util.unit.DataSize
 import java.io.File
 import java.nio.file.Path
 import java.util.zip.ZipEntry
@@ -98,6 +102,58 @@ class OdsRegisterParserTest {
         assertTrue(result.records.all { it.keys.toList() == result.columnHeaders })
     }
 
+    @Test
+    fun `rejects content xml above the configured maximum`() {
+        val file = createOds(
+            groups = listOf(""),
+            headers = listOf("URL"),
+            rows = listOf(listOf("https://example.test")),
+        )
+        val sizeLimitedParser = OdsRegisterParser(maxUncompressedSize = DataSize.ofBytes(100))
+
+        assertThrows<IllegalArgumentException> { sizeLimitedParser.parse(file) }
+    }
+
+    @Test
+    fun `rejects a declared row count above the configured maximum`() {
+        val file = createOds(
+            groups = listOf(""),
+            headers = listOf("URL"),
+            rows = List(3) { listOf("https://example.test/$it") },
+        )
+        val rowLimitedParser = OdsRegisterParser(maxRows = 2)
+
+        assertThrows<IllegalArgumentException> { rowLimitedParser.parse(file) }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["0", "16385", "invalid"])
+    fun `rejects invalid repeated column counts`(repetition: String) {
+        val file = createOdsFromXml(
+            odsDocument(
+                """
+                <table:table-row><table:table-cell office:value-type="string"><text:p>0</text:p></table:table-cell></table:table-row>
+                <table:table-row><table:table-cell table:number-columns-repeated="$repetition" office:value-type="string"><text:p>URL</text:p></table:table-cell></table:table-row>
+                """.trimIndent(),
+            ),
+        )
+
+        assertThrows<IllegalArgumentException> { parser.parse(file) }
+    }
+
+    @Test
+    fun `rejects excessive repeated rows before expanding them`() {
+        val file = createOdsFromXml(
+            odsDocument(
+                """
+                <table:table-row table:number-rows-repeated="100003"><table:table-cell office:value-type="string"><text:p>1</text:p></table:table-cell></table:table-row>
+                """.trimIndent(),
+            ),
+        )
+
+        assertThrows<IllegalArgumentException> { parser.parse(file) }
+    }
+
     private fun createOds(
         groups: List<String>,
         headers: List<String>,
@@ -119,6 +175,22 @@ class OdsRegisterParserTest {
             append("</table:table></office:spreadsheet></office:body></office:document-content>")
         }
 
+        return createOdsFromXml(xml)
+    }
+
+    private fun odsDocument(rows: String): String {
+        return """<?xml version="1.0" encoding="UTF-8"?>
+            <office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"
+                xmlns:table="urn:oasis:names:tc:opendocument:xmlns:table:1.0"
+                xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0">
+                <office:body><office:spreadsheet><table:table table:name="Sheet1">
+                    $rows
+                </table:table></office:spreadsheet></office:body>
+            </office:document-content>
+        """.trimIndent()
+    }
+
+    private fun createOdsFromXml(xml: String): File {
         val file = tempDirectory.resolve("register-${System.nanoTime()}.ods").toFile()
         ZipOutputStream(file.outputStream()).use { archive ->
             archive.putNextEntry(ZipEntry("content.xml"))
