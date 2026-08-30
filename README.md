@@ -145,8 +145,10 @@ services:
 Start the service with:
 
 ```shell
-docker compose up
+docker compose up --build
 ```
+
+The container build runs the same full Maven verification as CI and then copies only the application JAR into a non-root Java 21 runtime image.
 
 ## Building and testing
 
