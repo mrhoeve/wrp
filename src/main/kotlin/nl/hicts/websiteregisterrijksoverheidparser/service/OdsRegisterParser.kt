@@ -92,28 +92,31 @@ class OdsRegisterParser(
         var requiredRows: Int? = null
 
         while (reader.hasNext()) {
-            when (reader.next()) {
-                XMLStreamConstants.START_ELEMENT -> {
-                    if (reader.namespaceURI == TABLE_NAMESPACE && reader.localName == "table-row") {
-                        val repeated = repeatedCount(reader, "number-rows-repeated", maxRows + 2)
-                        val row = readRow(reader)
-                        repeat(repeated.coerceAtMost((requiredRows ?: 2) - rows.size).coerceAtLeast(0)) {
-                            rows.add(row)
-                            if (rows.size == 1) {
-                                val count = declaredRowCount(row)
-                                requiredRows = count + 2
-                            }
-                        }
-                        if (requiredRows != null && rows.size >= checkNotNull(requiredRows)) return rows
-                    }
-                }
-
-                XMLStreamConstants.END_ELEMENT -> {
-                    if (reader.namespaceURI == TABLE_NAMESPACE && reader.localName == "table") return rows
-                }
+            val event = reader.next()
+            if (isElement(reader, event, XMLStreamConstants.START_ELEMENT, TABLE_NAMESPACE, "table-row")) {
+                requiredRows = appendRequiredRows(reader, rows, requiredRows)
+                if (containsRequiredRows(rows, requiredRows)) return rows
             }
+            if (isElement(reader, event, XMLStreamConstants.END_ELEMENT, TABLE_NAMESPACE, "table")) return rows
         }
         return rows
+    }
+
+    private fun appendRequiredRows(
+        reader: XMLStreamReader,
+        rows: MutableList<List<String>>,
+        requiredRows: Int?,
+    ): Int? {
+        val repeated = repeatedCount(reader, "number-rows-repeated", maxRows + 2)
+        val row = readRow(reader)
+        val availableRows = ((requiredRows ?: 2) - rows.size).coerceAtLeast(0)
+        repeat(repeated.coerceAtMost(availableRows)) { rows.add(row) }
+        return requiredRows ?: rows.firstOrNull()?.let { declaredRowCount(it) + 2 }
+    }
+
+    private fun containsRequiredRows(rows: List<List<String>>, requiredRows: Int?): Boolean {
+        val rowLimit = requiredRows ?: return false
+        return rows.size >= rowLimit
     }
 
     private fun readRow(reader: XMLStreamReader): List<String> {
@@ -154,26 +157,13 @@ class OdsRegisterParser(
             when (reader.next()) {
                 XMLStreamConstants.START_ELEMENT -> {
                     depth++
-                    if (reader.namespaceURI == TEXT_NAMESPACE) {
-                        when (reader.localName) {
-                            "p" -> paragraph = StringBuilder()
-                            "s" -> {
-                                val count = repeatedCount(reader, "c", MAX_TEXT_SPACE_REPETITION, TEXT_NAMESPACE)
-                                repeat(count) { paragraph?.append(' ') }
-                            }
-                            "tab" -> paragraph?.append('\t')
-                            "line-break" -> paragraph?.append('\n')
-                        }
-                    }
+                    paragraph = readTextElement(reader, paragraph)
                 }
 
                 XMLStreamConstants.CHARACTERS, XMLStreamConstants.CDATA -> paragraph?.append(reader.text)
 
                 XMLStreamConstants.END_ELEMENT -> {
-                    if (reader.namespaceURI == TEXT_NAMESPACE && reader.localName == "p") {
-                        paragraphs.add(paragraph?.toString().orEmpty())
-                        paragraph = null
-                    }
+                    paragraph = finishParagraph(reader, paragraph, paragraphs)
                     depth--
                 }
             }
@@ -181,6 +171,38 @@ class OdsRegisterParser(
 
         return if (paragraphs.isNotEmpty()) paragraphs.joinToString("\n") else fallbackValue
     }
+
+    private fun readTextElement(reader: XMLStreamReader, paragraph: StringBuilder?): StringBuilder? {
+        if (reader.namespaceURI != TEXT_NAMESPACE) return paragraph
+        return when (reader.localName) {
+            "p" -> StringBuilder()
+            "s" -> {
+                val count = repeatedCount(reader, "c", MAX_TEXT_SPACE_REPETITION, TEXT_NAMESPACE)
+                paragraph?.apply { repeat(count) { append(' ') } }
+            }
+            "tab" -> paragraph?.apply { append('\t') }
+            "line-break" -> paragraph?.apply { append('\n') }
+            else -> paragraph
+        }
+    }
+
+    private fun finishParagraph(
+        reader: XMLStreamReader,
+        paragraph: StringBuilder?,
+        paragraphs: MutableList<String>,
+    ): StringBuilder? {
+        if (reader.namespaceURI != TEXT_NAMESPACE || reader.localName != "p") return paragraph
+        paragraphs.add(paragraph?.toString().orEmpty())
+        return null
+    }
+
+    private fun isElement(
+        reader: XMLStreamReader,
+        event: Int,
+        expectedEvent: Int,
+        namespace: String,
+        localName: String,
+    ): Boolean = event == expectedEvent && reader.namespaceURI == namespace && reader.localName == localName
 
     private fun repeatedCount(
         reader: XMLStreamReader,

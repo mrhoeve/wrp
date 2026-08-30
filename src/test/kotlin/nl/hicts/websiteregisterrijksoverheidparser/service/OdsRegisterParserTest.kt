@@ -154,6 +154,36 @@ class OdsRegisterParserTest {
         assertThrows<IllegalArgumentException> { parser.parse(file) }
     }
 
+    @Test
+    fun `preserves rich text and fallback cell values`() {
+        val file = createOdsFromXml(
+            odsDocument(
+                """
+                <table:table-row>
+                    <table:table-cell office:value-type="string"><text:p>1</text:p></table:table-cell>
+                    <table:table-cell/>
+                </table:table-row>
+                <table:table-row>
+                    <table:table-cell office:value-type="string"><text:p>Rich text</text:p></table:table-cell>
+                    <table:table-cell office:value-type="string"><text:p>Fallback</text:p></table:table-cell>
+                </table:table-row>
+                <table:table-row>
+                    <table:table-cell office:value-type="string">
+                        <text:p>first<text:s text:c="2"/>second<text:tab/>third<text:line-break/>fourth</text:p>
+                        <text:p>last</text:p>
+                    </table:table-cell>
+                    <table:table-cell office:value-type="string" office:string-value="fallback"/>
+                </table:table-row>
+                """.trimIndent(),
+            ),
+        )
+
+        val record = parser.parse(file).records.single()
+
+        assertEquals("first  second\tthird\nfourth\nlast", record["Rich text"])
+        assertEquals("fallback", record["Fallback"])
+    }
+
     private fun createOds(
         groups: List<String>,
         headers: List<String>,
