@@ -1,38 +1,78 @@
-# This workflow will build a Java project with Maven, and cache/restore any dependencies to improve the workflow execution time
-# For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-maven
-
-name: Java CI with Maven
+name: Build and security checks
 
 on:
   workflow_dispatch:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
+
+permissions:
+  contents: read
 
 jobs:
-  build:
+  verify:
+    name: Verify application
+    runs-on: ubuntu-latest
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: "21"
+          distribution: temurin
+          cache: maven
+
+      - name: Verify with Maven
+        run: mvn -B clean verify
+
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v5
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Analyze with SonarCloud
+        if: ${{ env.SONAR_TOKEN != '' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+
+  container:
+    name: Build and scan container
+    needs: verify
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v5
-      with:
-        fetch-depth: 0
-    - name: Set up JDK 25
-      uses: actions/setup-java@v5
-      with:
-        java-version: '25'
-        distribution: 'corretto'
-        cache: maven
-    - name: Cache SonarCloud Packages
-      uses: actions/cache@v5
-      with:
-        path: ~/.sonar/cache
-        key: ${{ runner.os }}-sonar
-        restore-keys: ${{ runner.os }}-sonar
-    - name: Build with Maven
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information
-        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}   # Generate a token on Sonarcloud.io, add it to the secrets of this repo with the name SONAR_TOKEN (Settings > Secrets > Actions > add new repository secret)
-      run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar --file pom.xml
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build container image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          load: true
+          push: false
+          tags: wrp:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Scan container image
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: wrp:ci
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          severity: HIGH,CRITICAL
