@@ -36,7 +36,6 @@
         <sonar.coverage.exclusions>
             **/WebsiteregisterRijksoverheidParserApplication.kt
         </sonar.coverage.exclusions>
-        <maven-release-plugin.version>3.3.1</maven-release-plugin.version>
     </properties>
     <dependencyManagement>
        <dependencies>
@@ -127,14 +126,6 @@
         <sourceDirectory>${project.basedir}/src/main/kotlin</sourceDirectory>
         <testSourceDirectory>${project.basedir}/src/test/kotlin</testSourceDirectory>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-release-plugin</artifactId>
-                <version>${maven-release-plugin.version}</version>
-                <configuration>
-                    <tagNameFormat>@{project.version}</tagNameFormat>
-                </configuration>
-            </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
