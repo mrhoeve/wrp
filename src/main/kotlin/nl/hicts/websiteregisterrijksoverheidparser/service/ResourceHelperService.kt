@@ -28,10 +28,16 @@ class ResourceHelperService(
     @Throws(UnableToDetermineDomainException::class)
     fun determineDomain() {
         try {
-            resourceURI = URI.create(resourceURL)
-            resourceURI.toURL()
-        } catch (_: Throwable) {
-            throw UnableToDetermineDomainException("Unable to parse resourceURL '${resourceURL}', could not determine domain.")
+            val configuredURI = URI.create(resourceURL)
+            require(configuredURI.scheme.equals("http", ignoreCase = true) ||
+                configuredURI.scheme.equals("https", ignoreCase = true))
+            require(!configuredURI.host.isNullOrBlank())
+            resourceURI = configuredURI
+        } catch (exception: Exception) {
+            throw UnableToDetermineDomainException(
+                "resourceurl must be an absolute HTTP(S) URL: '$resourceURL'",
+                exception,
+            )
         }
     }
 
@@ -45,8 +51,8 @@ class ResourceHelperService(
             val doc = Jsoup.parse(remoteResourceClient.getText(resourceURL), resourceURL)
             linkToDocument =
                 doc.select("a").firstOrNull { it.attributes()["href"].contains(".ods", true) }?.attributes()?.get("href")
-        } catch (t: Throwable) {
-            logger.error("Unable to connect to $resourceURL", t)
+        } catch (exception: Exception) {
+            logger.error("Unable to connect to $resourceURL", exception)
         }
         if (linkToDocument == null) {
             logger.error("Could not determine link to the registerdocument")
@@ -54,8 +60,8 @@ class ResourceHelperService(
         }
         return try {
             resourceURI.resolve(linkToDocument).toString()
-        } catch (t: Throwable) {
-            logger.error("Unable to resolve registerdocument link '$linkToDocument'", t)
+        } catch (exception: Exception) {
+            logger.error("Unable to resolve registerdocument link '$linkToDocument'", exception)
             null
         }
     }

@@ -31,6 +31,28 @@ class CaffeineCacheConfigTest {
     }
 
     @ParameterizedTest
+    @MethodSource("invalidDurationTestInput")
+    fun `invalid cache duration uses default`(duration: String) {
+        CaffeineCacheConfig(duration, "MINUTES").cacheManager()
+
+        verify { caffeineBuilderMock.expireAfterAccess(15L, TimeUnit.MINUTES) }
+    }
+
+    @Test
+    fun `cache duration permits surrounding whitespace`() {
+        CaffeineCacheConfig(" 10 ", "MINUTES").cacheManager()
+
+        verify { caffeineBuilderMock.expireAfterAccess(10L, TimeUnit.MINUTES) }
+    }
+
+    @Test
+    fun `invalid cache time unit uses default`() {
+        CaffeineCacheConfig("10", "WEEKS").cacheManager()
+
+        verify { caffeineBuilderMock.expireAfterAccess(10L, TimeUnit.MINUTES) }
+    }
+
+    @ParameterizedTest
     @MethodSource("nonDefaultConfigurationTestInput")
     fun `test non default configuration`(duration: Long, timeUnit: TimeUnit) {
         CaffeineCacheConfig(duration.toString(), timeUnit.toString()).cacheManager()
@@ -50,5 +72,8 @@ class CaffeineCacheConfigTest {
             Arguments.of(20L, TimeUnit.HOURS),
             Arguments.of(5L, TimeUnit.DAYS)
         )
+
+        @JvmStatic
+        fun invalidDurationTestInput() = listOf("invalid", "0", "-1", " ")
     }
 }

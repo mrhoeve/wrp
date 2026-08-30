@@ -15,15 +15,17 @@ import java.io.IOException
 class ResourceHelperServiceTest {
     private val remoteResourceClient: RemoteResourceClient = mockk()
 
-    @Test
-    fun `domain could not be determined`() {
-        val service = ResourceHelperService(remoteResourceClient, "not a valid URL")
+    @ParameterizedTest
+    @MethodSource("invalidResourceURLs")
+    fun `invalid resource URL is rejected`(resourceURL: String) {
+        val service = ResourceHelperService(remoteResourceClient, resourceURL)
 
         val caughtException = assertThrows<UnableToDetermineDomainException> {
             service.determineDomain()
         }
 
         assertTrue(!caughtException.message.isNullOrEmpty(), "Exception contains a message")
+        assertTrue(caughtException.cause != null, "Exception preserves the cause")
     }
 
     @Test
@@ -90,6 +92,14 @@ class ResourceHelperServiceTest {
                 "https://downloads.example/register.ODS?version=2",
                 "https://downloads.example/register.ODS?version=2",
             ),
+        )
+
+        @JvmStatic
+        fun invalidResourceURLs() = listOf(
+            "not a valid URL",
+            "/relative/path",
+            "ftp://source.example/register",
+            "https:///missing-host",
         )
     }
 }

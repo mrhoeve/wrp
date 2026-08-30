@@ -15,6 +15,11 @@ class CaffeineCacheConfig(
     @param:Value("\${cacheduration:}") private val cacheDuration: String,
     @param:Value("\${cachetimeunit:}") private val cacheTimeUnit: String,
 ) {
+    companion object {
+        private const val DEFAULT_CACHE_DURATION = 15L
+        private val DEFAULT_CACHE_TIME_UNIT = TimeUnit.MINUTES
+    }
+
     private val logger = LoggerFactory.getLogger(CaffeineCacheConfig::class.java)
 
     @Bean
@@ -33,15 +38,35 @@ class CaffeineCacheConfig(
     }
 
     private fun determineCacheDuration(): Long {
-        return cacheDuration.toLongOrNull() ?: run { 15L }
+        val configuredDuration = cacheDuration.trim().toLongOrNull()
+        if (configuredDuration != null && configuredDuration > 0) return configuredDuration
+
+        if (cacheDuration.isNotBlank()) {
+            logger.warn(
+                "Invalid cacheduration '{}'; using default value {}",
+                cacheDuration,
+                DEFAULT_CACHE_DURATION,
+            )
+        }
+        return DEFAULT_CACHE_DURATION
     }
 
     private fun determineCacheTimeUnit(): TimeUnit {
         return when (cacheTimeUnit.uppercase().trim()) {
             "SECONDS" -> TimeUnit.SECONDS
+            "MINUTES" -> TimeUnit.MINUTES
             "HOURS" -> TimeUnit.HOURS
             "DAYS" -> TimeUnit.DAYS
-            else -> TimeUnit.MINUTES
+            else -> {
+                if (cacheTimeUnit.isNotBlank()) {
+                    logger.warn(
+                        "Invalid cachetimeunit '{}'; using default value {}",
+                        cacheTimeUnit,
+                        DEFAULT_CACHE_TIME_UNIT,
+                    )
+                }
+                DEFAULT_CACHE_TIME_UNIT
+            }
         }
     }
 }
