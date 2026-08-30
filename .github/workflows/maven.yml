@@ -30,6 +30,9 @@ jobs:
           distribution: temurin
           cache: maven
 
+      - name: Test release version logic
+        run: scripts/test-release-version.sh
+
       - name: Verify with Maven
         run: mvn -B clean verify
 
