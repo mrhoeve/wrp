@@ -111,6 +111,14 @@ jobs:
           cp target/classes/META-INF/sbom/application.cdx.json "dist/wrp-$RELEASE_VERSION-sbom.cdx.json"
           sha256sum dist/* > "dist/wrp-$RELEASE_VERSION-sha256.txt"
 
+      - name: Retain release assets
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-${{ steps.version.outputs.release_version }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Create release commit
         id: release_commit
         env:
