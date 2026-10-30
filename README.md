@@ -4,6 +4,12 @@
 
 WRP downloads the Websiteregister published by the Dutch government, parses the available ODS columns, and exposes the result as JSON over an unchanged REST interface.
 
+## Project status: maintenance ending
+
+WRP 2.1.0 is planned to be the final release. After this release, the repository is intended to be archived unless there is an expressed need for continued maintenance. Once archived, the project will no longer receive routine updates or security fixes.
+
+Are you using WRP, or would you like to see it maintained? Please [open a GitHub issue](https://github.com/mrhoeve/wrp/issues/new) before the repository is archived and tell us about your use case. Feedback will help determine whether maintenance should continue. If the repository has already been archived, its issue tracker is read-only.
+
 ## REST API
 
 ### `GET /registerdata`
