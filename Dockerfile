@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM maven:3.9.16-eclipse-temurin-21-alpine AS build
+FROM maven:3.10.0-eclipse-temurin-21-alpine AS build
 
 WORKDIR /workspace
 COPY pom.xml ./
