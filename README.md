@@ -174,6 +174,8 @@ docker compose up --build
 
 The container build runs the same full Maven verification as CI and then copies only the application JAR into a non-root Java 21 runtime image.
 
+The included Compose file tags local builds as `wrp:local`, leaving the published `mrhoeve/wrp:latest` image untouched. To run the published image, omit the `build` section and use `image: mrhoeve/wrp:latest`.
+
 ## Building and testing
 
 WRP targets Java 21. Use the Maven wrapper to run the complete build:

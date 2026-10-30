@@ -1,11 +1,13 @@
 .git
 .github
 .idea
+.junie
+downloads
+dist
 .mvn
 target
 *.iml
 docker-compose.yml
-dockerize.sh
 LICENSE.md
 README.md
 mvnw
