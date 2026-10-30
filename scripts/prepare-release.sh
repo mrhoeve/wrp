@@ -69,7 +69,7 @@ next_version="$(printf '%s\n' "$plan" | awk -F= '$1 == "next_version" { print $2
 printf '%s\n' "$plan"
 
 if [[ "$dry_run" == false ]]; then
-    ./mvnw -B org.codehaus.mojo:versions-maven-plugin:2.21.0:set \
+    ./mvnw -B org.codehaus.mojo:versions-maven-plugin:2.23.0:set \
         -DnewVersion="$release_version" \
         -DgenerateBackupPoms=false \
         -DprocessAllModules=true

@@ -146,6 +146,7 @@ jobs:
       - name: Scan release candidate
         uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
         with:
+          version: v0.76.1
           image-ref: ${{ env.IMAGE_NAME }}:release-candidate-${{ github.run_id }}
           format: table
           exit-code: "1"
@@ -194,7 +195,7 @@ jobs:
           RELEASE_VERSION: ${{ steps.version.outputs.release_version }}
         run: |
           git tag -a "$RELEASE_VERSION" -m "Release $RELEASE_VERSION" "${{ steps.release_commit.outputs.sha }}"
-          ./mvnw -B org.codehaus.mojo:versions-maven-plugin:2.21.0:set \
+          ./mvnw -B org.codehaus.mojo:versions-maven-plugin:2.23.0:set \
             -DnewVersion="$NEXT_VERSION" \
             -DgenerateBackupPoms=false \
             -DprocessAllModules=true
